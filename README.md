@@ -1,12 +1,14 @@
 # DEPP - DBT Python Postgres Adapter
 This package support for running python models in dbt for postgres directly within your dbt project
-Inspired on dbt-fal but is both extremely fast and high performance and fully typed
+Inspired on dbt-fal but made to be both extremely high performance and fully typed
+Also supports polars dataframe besides pandas and more are comming soon
 
 ## Features
 
 - Run Python scripts as dbt models
-- Support for both pandas and polars dataframes
-- Extremely High-performance using connectorx, asyncpg
+- Python models are fully typed
+- Currently support for both pandas and polars dataframes (more comming soon)
+- Blazing performance using connectorx, asyncpg
 - Seamless integration with PostgreSQL databases (more comming soon)
 
 ## Installation
