@@ -1,0 +1,18 @@
+test_project:
+  target: dev_depp
+  outputs:
+    dev_depp:
+      type: depp
+      db_profile: dev_postgres
+      database: example_db
+      schema: test
+    dev_postgres:
+      type: postgres
+      host: localhost
+      user: postgres
+      password: postgres
+      port: 5433
+      database: example_db
+      schema: test
+      threads: 1
+      keepalives_idle: 0
