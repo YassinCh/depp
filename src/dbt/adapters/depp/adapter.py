@@ -30,36 +30,35 @@ DB_RELATION = FACTORY.get_relation_class_by_name(DB_PROFILE.credentials.type)
 
 
 class PythonAdapter(metaclass=AdapterMeta):
-    """The PythonAdapter ...."""
-
+    # TODO: fix type ignores where possible
     # TODO: documentation and docstrings
+    """The PythonAdapter ...."""
 
     Relation = DB_RELATION
     AdapterSpecificConfigs = AdapterConfig
     type = AdapterTypeDescriptor()
     _db_adapter_class: Type[BaseAdapter]
+    _db_adapter: BaseAdapter
     db_creds: Credentials
 
     def __new__(cls, config: RuntimeConfig, mp_context: SpawnContext):
         instance = super().__new__(cls)
         db_creds = cls.get_db_credentials(config)
 
-        with release_plugin_lock():
-            # TODO: fix typehint here
-            db_adapter: Type[BaseAdapter] = FACTORY.get_adapter_class_by_name(  # type: ignore
-                db_creds.type
-            )
-            original_plugin = FACTORY.get_plugin_by_name(config.credentials.type)
-            original_plugin.dependencies = [db_creds.type]
-
         for key in OVERRIDE_PROPERTIES:
             if OVERRIDE_PROPERTIES[key] is not None:
                 setattr(config, key, OVERRIDE_PROPERTIES[key])
 
         with release_plugin_lock():
+            db_adapter: Type[BaseAdapter] = FACTORY.get_adapter_class_by_name(  # type: ignore
+                db_creds.type
+            )
+            original_plugin = FACTORY.get_plugin_by_name(config.credentials.type)
+            original_plugin.dependencies = [db_creds.type]
             config.credentials = db_creds
             FACTORY.register_adapter(config, mp_context)
             config.credentials = DeppCredentialsWrapper(db_creds)  # type: ignore
+
         instance._db_adapter_class = db_adapter
         instance.db_creds = db_creds
         return instance
@@ -68,33 +67,27 @@ class PythonAdapter(metaclass=AdapterMeta):
         self.config = config
         self.mp_context = mp_context
 
-        # TODO: look at this and improve
-        self._db_adapter: BaseAdapter = get_adapter_by_type(
-            self._db_adapter_class.type()
-        )  # type: ignore
+        # Type ignores are needed as we are overwriting some of dbt's behavior
+        self._db_adapter = get_adapter_by_type(self._db_adapter_class.type())  # type: ignore
         self.connections = self._db_adapter.connections
         self._available_ = self._db_adapter._available_.union(self._available_)  # type: ignore
         self._parse_replacements_.update(self._db_adapter._parse_replacements_)  # type: ignore
 
     @logs
     def submit_python_job(self, parsed_model: dict[str, Any], compiled_code: str):
-        # TODO: Add remote executor
+        # TODO: Add remote executors
         executor = self.get_executor(parsed_model)
         result = executor.submit(compiled_code)
-        return self.generate_python_submission_response(result)
-
-    def generate_python_submission_response(self, submission_result):
-        # TODO: Add more Response items
-        return AdapterResponse(
-            _message=f"Successfully executed Python model, result shape: {getattr(submission_result, 'shape', 'unknown')}"
-        )
+        return AdapterResponse(_message=f"PYTHON | {result}")
 
     def get_executor(self, parsed_model: dict[str, Any]) -> AbstractPythonExecutor[Any]:
+        """Get Python executor based on model's configured library (default: polars)."""
+        # TODO: this is still a bit meh
         library = parsed_model.get("config", {}).get("library", "pandas")
         executor_class = AbstractPythonExecutor.registry.get(library)
         if executor_class is None:
             raise ValueError(
-                f"Unknown library '{library}'. Available: {list(AbstractPythonExecutor.registry.keys())}"
+                f"No library '{library}'. Available: {list(AbstractPythonExecutor.registry.keys())}"
             )
         return executor_class(parsed_model, self.db_creds, library)  # type: ignore
 
@@ -119,6 +112,7 @@ class PythonAdapter(metaclass=AdapterMeta):
         return dep_credentials.db_creds
 
     def get_compiler(self):
+        """Get DBT compiler instance for this adapter."""
         return Compiler(self.config)
 
     def __getattr__(self, name: str):
@@ -130,13 +124,16 @@ class PythonAdapter(metaclass=AdapterMeta):
 
     @classmethod
     def is_cancelable(cls) -> bool:
+        """Python jobs cannot be cancelled once started."""
         return False
 
     @property
     def db_adapter(self):
+        """Access underlying database adapter."""
         return self._db_adapter
 
     @property
     @lru_cache(maxsize=None)
     def manifest(self):
+        """Get cached DBT manifest for the project."""
         return ManifestLoader.get_full_manifest(self.config)

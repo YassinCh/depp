@@ -6,7 +6,7 @@ from .abstract_executor import AbstractPythonExecutor
 class PolarsLocalExecutor(AbstractPythonExecutor[pl.DataFrame]):
     library_name = "polars"
 
-    def get_csv(self, df: pl.DataFrame, table: str, schema: str) -> str:
+    def prepare_bulk_write(self, df: pl.DataFrame, table: str, schema: str) -> str:
         df.head(1).write_database(
             table_name=f"{schema}.{table}",
             connection=self.conn_string,
