@@ -1,54 +1,92 @@
-# Welcome to dbt-postgres-python 👋 do more with dbt
+# DEPP - DBT Python Postgres Adapter
+This package support for running python models in dbt for postgres directly within your dbt project
+Inspired on dbt-fal but is both extremely fast and high performance and fully typed
 
-dbt-postgres-python adapter is the ✨easiest✨ way to run your [dbt Python models](https://docs.getdbt.com/docs/building-a-dbt-project/building-models/python-models).
+## Features
 
-Starting with dbt v1.3, you can now build your dbt models in Python. This leads to some cool use cases that was once difficult to build with SQL alone. Some examples are:
+- Run Python scripts as dbt models
+- Support for both pandas and polars dataframes
+- Extremely High-performance using connectorx, asyncpg
+- Seamless integration with PostgreSQL databases (more comming soon)
 
-- Using Python stats libraries to calculate stats
-- Building forecasts
-- Building other predictive models such as classification and clustering
+## Installation
 
-This is fantastic! BUT, there is still one issue though! There is no Python support for Postgres. dapp provides the best environment to run your Python models that works with Postgres!
+Install using [uv](https://docs.astral.sh/uv/) (recommended):
 
-## Getting Started
+```bash
+uv add depp
+```
 
-### 1. Install depp
-`uv add depp`
+Or using pip:
 
-### 2. Update your `profiles.yml` and add the fal adapter
+```bash
+pip install depp
+```
+
+## Quick Start
+
+1. Add to your `profiles.yml`:
+Make sure to both add a db_profile with all your details and add your database and schema
 
 ```yaml
-jaffle_shop:
-  target: dev_with_depp
+your_project:
+  target: dev
   outputs:
-    dev_with_fal:
-      type: depp  # "fal" type is kept for backwards compatibility
-      db_profile: dev_postgres # This points to your main adapter
+    dev:
+      type: depp
+      db_profile: dev_postgres
+      database: example_db
+      schema: test
+      
     dev_postgres:
       type: postgres
-      ...
+      host: localhost
+      user: postgres
+      password: postgres
+      port: 5432
+      database: example_db
+      schema: test
+      threads: 1
 ```
 
-Don't forget to point to your main adapter with the `db_profile` attribute. This is how the fal adapter knows how to connect to your data warehouse.
-
-### 3. Add your python models
-
-Add in your python models to your project just as you would your SQL models. Follow DBT's [instructions](https://docs.getdbt.com/docs/build/python-models) 
-on how to do so.
+2. Create Python models in your dbt project:
 
 ```python
-# a_python_model.py
-
-import ...
+# models/my_python_model.py
+import polars as pl
 
 def model(dbt, session):
+    dbt.config(library="polars")
+    # Your Python logic here
+    df = pl.DataFrame({'column1': [1, 2, 3], 'column2': ['a', 'b', 'c']})
+    return df
+```
+3. `dbt run`!
 
-    my_sql_model_df = dbt.ref("my_sql_model")
+## Development
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management:
 
-    final_df = ...  # stuff you can't write in SQL!
+```bash
+# Install dependencies
+uv sync
 
-    return final_df
+# Run tests
+uv run pytest
+
+# Build package
+uv build
 ```
 
-### 4. `dbt run`!
-That is it! It is really that simple 😊
+## Requirements
+
+- Python >= 3.12
+- dbt-core >= 1.10.0
+- PostgreSQL database
+
+## License
+
+This project is open source and available under the MIT License.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.

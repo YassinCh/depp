@@ -6,6 +6,7 @@ test_project:
       db_profile: dev_postgres
       database: example_db
       schema: test
+      
     dev_postgres:
       type: postgres
       host: localhost
@@ -15,4 +16,3 @@ test_project:
       database: example_db
       schema: test
       threads: 1
-      keepalives_idle: 0
