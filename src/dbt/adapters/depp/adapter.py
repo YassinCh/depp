@@ -23,6 +23,7 @@ from .config import (
 )
 from .executors import *  # noqa
 from .executors import AbstractPythonExecutor
+from .type_inspector import inject_auto_config
 from .utils import logs, release_plugin_lock
 
 DB_PROFILE, OVERRIDE_PROPERTIES = load_profile_info()
@@ -77,6 +78,15 @@ class PythonAdapter(metaclass=AdapterMeta):
     @logs
     def submit_python_job(self, parsed_model: dict[str, Any], compiled_code: str):
         """Execute Python model code selecting the requested executor."""
+        # Auto-inject config based on type annotations
+        enhanced_code, detected_library = inject_auto_config(compiled_code)
+
+        # If we detected a library from type annotations and no explicit config exists,
+        # update the parsed model config to reflect the detected library
+        if detected_library and not parsed_model.get("config", {}).get("library"):
+            if "config" not in parsed_model:
+                parsed_model["config"] = {}
+            parsed_model["config"]["library"] = detected_library
         # TODO: Add remote executors
         executor = self.get_executor(parsed_model)
         result = executor.submit(compiled_code)

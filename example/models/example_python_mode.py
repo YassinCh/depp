@@ -1,8 +1,12 @@
+from typing import TYPE_CHECKING
+
 import pandas as pd
 
+if TYPE_CHECKING:
+    from ...src.dbt.adapters.depp import DbtObject, SessionObject
 
-def model(dbt, session):
-    dbt.config(library="pandas")
+
+def model(dbt: "DbtObject", session: "SessionObject"):
     products_df = dbt.ref("base_sql_model")
 
     customers_df = dbt.ref("base_python_model")
