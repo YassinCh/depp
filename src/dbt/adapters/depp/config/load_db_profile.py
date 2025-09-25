@@ -9,6 +9,7 @@ from ..utils import find_profile, find_target
 
 
 def load_profile_info() -> tuple[Profile, dict[str, Any]]:
+    """Load database profile from depp adapter configuration"""
     flags: Namespace = get_flags()  # type: ignore
     renderer = ProfileRenderer(getattr(flags, "VARS", {}))
 

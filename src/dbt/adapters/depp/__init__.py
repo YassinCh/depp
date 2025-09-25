@@ -1,7 +1,6 @@
 from dbt.adapters.base.plugin import AdapterPlugin
 
-# TODO: fix this
-from ...include import depp
+from ...include import depp  # type: ignore
 from .adapter import PythonAdapter
 from .config import DeppCredentials
 

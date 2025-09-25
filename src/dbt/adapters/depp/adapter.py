@@ -31,8 +31,7 @@ DB_RELATION = FACTORY.get_relation_class_by_name(DB_PROFILE.credentials.type)
 
 class PythonAdapter(metaclass=AdapterMeta):
     # TODO: fix type ignores where possible
-    # TODO: documentation and docstrings
-    """The PythonAdapter ...."""
+    """DBT adapter for executing Python models with database backends."""
 
     Relation = DB_RELATION
     AdapterSpecificConfigs = AdapterConfig
@@ -42,6 +41,7 @@ class PythonAdapter(metaclass=AdapterMeta):
     db_creds: Credentials
 
     def __new__(cls, config: RuntimeConfig, mp_context: SpawnContext):
+        """Create adapter instance and configure underlying database adapter."""
         instance = super().__new__(cls)
         db_creds = cls.get_db_credentials(config)
 
@@ -64,6 +64,7 @@ class PythonAdapter(metaclass=AdapterMeta):
         return instance
 
     def __init__(self, config: RuntimeConfig, mp_context: SpawnContext):
+        """Initialize adapter with database connection and configuration."""
         self.config = config
         self.mp_context = mp_context
 
@@ -75,6 +76,7 @@ class PythonAdapter(metaclass=AdapterMeta):
 
     @logs
     def submit_python_job(self, parsed_model: dict[str, Any], compiled_code: str):
+        """Execute Python model code selecting the requested executor."""
         # TODO: Add remote executors
         executor = self.get_executor(parsed_model)
         result = executor.submit(compiled_code)
@@ -93,6 +95,7 @@ class PythonAdapter(metaclass=AdapterMeta):
 
     @available
     def db_materialization(self, context: dict[str, Any], materialization: str):
+        """Execute database materialization macro."""
         materialization_macro = self.manifest.find_materialization_macro_by_name(
             self.config.project_name, materialization, self._db_adapter.type()
         )
@@ -104,6 +107,7 @@ class PythonAdapter(metaclass=AdapterMeta):
 
     @classmethod
     def get_db_credentials(cls, config: RuntimeConfig) -> Credentials:
+        """Extract database credentials from adapter configuration."""
         dep_credentials: DeppCredentials | DeppCredentialsWrapper = config.credentials  # type: ignore
         if isinstance(dep_credentials, DeppCredentials):
             return DB_PROFILE.credentials
