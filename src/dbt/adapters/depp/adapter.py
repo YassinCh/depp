@@ -21,7 +21,8 @@ from .config import (
     DeppCredentialsWrapper,
     load_profile_info,
 )
-from .executors import AbstractPythonExecutor, PandasPythonExecutor, PolarsLocalExecutor
+from .executors import *  # noqa
+from .executors import AbstractPythonExecutor
 from .utils import logs, release_plugin_lock
 
 DB_PROFILE, OVERRIDE_PROPERTIES = load_profile_info()
@@ -88,13 +89,14 @@ class PythonAdapter(metaclass=AdapterMeta):
             _message=f"Successfully executed Python model, result shape: {getattr(submission_result, 'shape', 'unknown')}"
         )
 
-    def get_executor(
-        self, parsed_model: dict[str, Any]
-    ) -> PolarsLocalExecutor | PandasPythonExecutor:
-        # TODO: I dont wanna change this everywhere so let's find a way to fix it
-        library_mapping = dict(polars=PolarsLocalExecutor, pandas=PandasPythonExecutor)
+    def get_executor(self, parsed_model: dict[str, Any]) -> AbstractPythonExecutor[Any]:
         library = parsed_model.get("config", {}).get("library", "pandas")
-        return library_mapping[library](parsed_model, self.db_creds, library)
+        executor_class = AbstractPythonExecutor.registry.get(library)
+        if executor_class is None:
+            raise ValueError(
+                f"Unknown library '{library}'. Available: {list(AbstractPythonExecutor.registry.keys())}"
+            )
+        return executor_class(parsed_model, self.db_creds, library)  # type: ignore
 
     @available
     def db_materialization(self, context: dict[str, Any], materialization: str):
