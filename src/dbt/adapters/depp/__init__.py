@@ -10,9 +10,9 @@ from .typing import (
     DbtThis,
     ModelFunction,
     PandasDataFrame,
-    PandasDbtObject,
+    PandasDbt,
     PolarsDataFrame,
-    PolarsDbtObject,
+    PolarsDbt,
     SessionObject,
 )
 
@@ -29,8 +29,8 @@ __all__ = [
     "DataFrameT",
     "DbtConfig",
     "DbtObject",
-    "PandasDbtObject",
-    "PolarsDbtObject",
+    "PandasDbt",
+    "PolarsDbt",
     "DbtThis",
     "ModelFunction",
     "SessionObject",

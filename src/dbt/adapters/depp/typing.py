@@ -1,6 +1,6 @@
 """Type hints for dbt Python models to improve developer experience."""
 
-from typing import Any, Callable, Literal, Optional, Protocol, TypeVar, Union, overload
+from typing import Any, Literal, Optional, Protocol, TypeVar, Union
 
 import pandas as pd
 import polars as pl
@@ -51,16 +51,9 @@ class DbtConfig:
 
 
 class DbtObject(Protocol):
-    """Type hints for the dbt object passed to Python models.
-
-    The DataFrame type returned by ref() and source() depends on the library
-    configured via dbt.config(library="pandas" or "polars").
-
-    For the best type hints experience:
-    1. Call dbt.config(library="pandas" or "polars") at the start of your model
-    2. Use type annotations when assigning:
-       - customers: pd.DataFrame = dbt.ref("customers")  # for pandas
-       - customers: pl.DataFrame = dbt.ref("customers")  # for polars
+    """
+    More generic type hints for the dbt object passed to Python models.
+    For a better typing experience import PolarsDbt or PandasDbt
     """
 
     def ref(
@@ -79,9 +72,7 @@ class DbtObject(Protocol):
             v: Model version (short form)
 
         Returns:
-            DataFrame containing the referenced model's data.
-            - Returns pd.DataFrame when dbt.config(library="pandas")
-            - Returns pl.DataFrame or pl.LazyFrame when dbt.config(library="polars")
+            A dataFrame containing the referenced model's data.
         """
         ...
 
@@ -93,9 +84,7 @@ class DbtObject(Protocol):
             table_name: Name of the table within the source
 
         Returns:
-            DataFrame containing the source table's data.
-            - Returns pd.DataFrame when dbt.config(library="pandas")
-            - Returns pl.DataFrame or pl.LazyFrame when dbt.config(library="polars")
+            A DataFrame containing the source table's data.
         """
         ...
 
@@ -113,7 +102,7 @@ class DbtObject(Protocol):
         ...
 
 
-class PandasDbtObject(DbtObject, Protocol):
+class PandasDbt(DbtObject, Protocol):
     """DbtObject specifically for pandas models.
 
     When you use this type hint, the library is automatically configured to "pandas":
@@ -128,7 +117,7 @@ class PandasDbtObject(DbtObject, Protocol):
         *additional_names: str,
         version: Optional[Union[str, int]] = None,
         v: Optional[Union[str, int]] = None,
-    ) -> pd.DataFrame:
+    ) -> PandasDataFrame:
         """Reference returns pd.DataFrame when using pandas."""
         ...
 
@@ -137,9 +126,9 @@ class PandasDbtObject(DbtObject, Protocol):
         ...
 
 
-class PolarsDbtObject(DbtObject, Protocol):
-    """DbtObject specifically for polars models.
-
+class PolarsDbt(DbtObject, Protocol):
+    """
+    A DbtObject specifically for polars models.
     When you use this type hint, the library is automatically configured to "polars":
     def model(dbt: PolarsDbtObject, session: SessionObject) -> pl.DataFrame:
         # No need to call dbt.config(library="polars") - it's automatic!
@@ -152,13 +141,11 @@ class PolarsDbtObject(DbtObject, Protocol):
         *additional_names: str,
         version: Optional[Union[str, int]] = None,
         v: Optional[Union[str, int]] = None,
-    ) -> pl.DataFrame:
+    ) -> PolarsDataFrame:
         """Reference returns pl.DataFrame or pl.LazyFrame when using polars."""
         ...
 
-    def source(
-        self, source_name: str, table_name: str
-    ) -> Union[pl.DataFrame, pl.LazyFrame]:
+    def source(self, source_name: str, table_name: str) -> PolarsDataFrame:
         """Source returns pl.DataFrame or pl.LazyFrame when using polars."""
         ...
 
@@ -195,44 +182,6 @@ class SessionObject(Protocol):
         ...
 
 
-# Model function overloads for different library configurations
-@overload
-def model(dbt: PandasDbtObject, session: SessionObject) -> pd.DataFrame:
-    """Model function when configured for pandas."""
-    ...
-
-
-@overload
-def model(
-    dbt: PolarsDbtObject, session: SessionObject
-) -> Union[pl.DataFrame, pl.LazyFrame]:
-    """Model function when configured for polars."""
-    ...
-
-
-@overload
-def model(dbt: DbtObject, session: SessionObject) -> DataFrame:
-    """Generic model function signature."""
-    ...
-
-
-def model(dbt: DbtObject, session: SessionObject) -> DataFrame:
-    """Type stub for dbt Python model function.
-
-    This is the standard signature for a dbt Python model.
-
-    Args:
-        dbt: The dbt object providing access to ref(), source(), config, etc.
-        session: Database session object for direct database operations
-
-    Returns:
-        DataFrame to be materialized as the model result
-    """
-    raise NotImplementedError("This is a type stub - implement in your model file")
-
-
-type ModelFunction = Callable[[DbtObject, SessionObject], DataFrame]
-
 __all__ = [
     "DataFrame",
     "PandasDataFrame",
@@ -241,9 +190,7 @@ __all__ = [
     "DbtThis",
     "DbtConfig",
     "DbtObject",
-    "PandasDbtObject",
-    "PolarsDbtObject",
+    "PandasDbt",
+    "PolarsDbt",
     "SessionObject",
-    "ModelFunction",
-    "model",
 ]
