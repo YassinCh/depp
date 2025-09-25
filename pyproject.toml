@@ -20,6 +20,7 @@ dependencies = [
     "connectorx>=0.4.4",
     "asyncpg>=0.30.0,<0.31.0",
     "adbc-driver-postgresql>=1.8.0",
+    "sqlalchemy>=2.0.43",
 ]
 
 [project.optional-dependencies]

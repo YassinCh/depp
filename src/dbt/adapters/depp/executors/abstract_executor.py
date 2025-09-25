@@ -53,7 +53,7 @@ class AbstractPythonExecutor(ABC, Generic[DataFrameType]):
         asyncio.run(self.async_write_df(table_name, dataframe))
 
     @abstractmethod
-    def get_csv(self, df: DataFrameType) -> str:
+    def get_csv(self, df: DataFrameType, table: str, schema: str) -> str:
         raise NotImplementedError
 
     async def async_write_df(self, table_name: str, df: DataFrameType):
@@ -62,7 +62,7 @@ class AbstractPythonExecutor(ABC, Generic[DataFrameType]):
         conn = await asyncpg.connect(dsn=self.conn_string)
 
         csv_buffer = io.BytesIO()
-        csv_string = self.get_csv(df)
+        csv_string = self.get_csv(df, table, schema)
         csv_buffer.write(csv_string.encode("utf-8"))
         csv_buffer.seek(0)
 
