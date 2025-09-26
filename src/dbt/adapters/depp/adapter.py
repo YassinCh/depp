@@ -1,18 +1,24 @@
+import inspect
 from functools import lru_cache
 from multiprocessing.context import SpawnContext
-from typing import Any, Type
+from pathlib import Path
+from typing import Any, FrozenSet, Iterable, Type
 
 from dbt.adapters.base.impl import BaseAdapter
 from dbt.adapters.base.meta import AdapterMeta, available
+from dbt.adapters.base.relation import BaseRelation
 from dbt.adapters.contracts.connection import AdapterResponse, Credentials
+from dbt.adapters.contracts.relation import RelationConfig
 from dbt.adapters.factory import (
     FACTORY,
     get_adapter_by_type,  # type: ignore
 )
 from dbt.adapters.protocol import AdapterConfig
+from dbt.artifacts.resources.types import ModelLanguage
 from dbt.clients.jinja import MacroGenerator
 from dbt.compilation import Compiler
 from dbt.config.runtime import RuntimeConfig
+from dbt.contracts.graph.manifest import Manifest
 from dbt.parser.manifest import ManifestLoader
 
 from .config import (
@@ -22,6 +28,7 @@ from .config import (
     get_library_from_model,
     load_profile_info,
 )
+from .docstring_utils import extract_python_docstring
 from .executors import *  # noqa
 from .executors import AbstractPythonExecutor
 from .utils import logs, release_plugin_lock
@@ -144,6 +151,51 @@ class PythonAdapter(metaclass=AdapterMeta):
 
     @property
     @lru_cache(maxsize=None)
-    def manifest(self):
+    def manifest(self) -> Manifest:
         """Get cached DBT manifest for the project."""
         return ManifestLoader.get_full_manifest(self.config)
+
+    def get_filtered_catalog(
+        self,
+        relation_configs: Iterable[RelationConfig],
+        used_schemas: FrozenSet[tuple[str, str]],
+        relations: set[BaseRelation] | None = None,
+    ) -> tuple[Any, list[Exception]]:
+        """Override to enrich Python models with docstrings"""
+        for manifest in [self.manifest, self._find_parent_manifest()]:  # type: ignore
+            if manifest:
+                self.inject_docstring(manifest)  # type: ignore
+
+        return self._db_adapter.get_filtered_catalog(  # type: ignore
+            relation_configs, used_schemas, relations
+        )
+
+    def _find_parent_manifest(self) -> Manifest | None:
+        """Find manifest from parent GenerateTask if it exists"""
+        try:
+            frame = inspect.currentframe()
+            while frame := frame.f_back:  # type: ignore
+                if (
+                    (obj := frame.f_locals.get("self"))
+                    and type(obj).__name__ == "GenerateTask"
+                    and hasattr(obj, "manifest")
+                    and obj.manifest
+                ):
+                    return obj.manifest
+        except Exception:
+            pass
+        return None
+
+    def inject_docstring(self, manifest: Manifest):
+        """Extract Python model docstrings as descriptions (YAML takes precedence)"""
+        project_root = Path(self.config.project_root)
+        for node in manifest.nodes.values():
+            if (
+                getattr(node, "language", None) == ModelLanguage.python
+                and node.resource_type.value == "model"
+                and not (node.description or "").strip()
+            ):
+                if docstring := extract_python_docstring(
+                    str(project_root / node.original_file_path)
+                ):
+                    node.description = docstring

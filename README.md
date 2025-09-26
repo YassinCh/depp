@@ -6,6 +6,7 @@ Also supports polars dataframe besides pandas and more are comming soon
 ## Features
 
 - Run Python scripts as dbt models
+- Python Docs string are automatically added as descriptin in docs (more doc improvement soon)
 - Python models are fully typed
 - Currently support for both pandas and polars dataframes (more comming soon)
 - Blazing performance using connectorx, asyncpg

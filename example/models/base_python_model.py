@@ -2,6 +2,12 @@ import pandas as pd
 
 
 def model(dbt, session):
+    """
+    Creates a simple customer table with sample data.
+
+    This model generates basic customer information including IDs, names,
+    regions, and total spending amounts for testing purposes.
+    """
     # Create a simple dataframe with customer data
     data = {
         "customer_id": [1, 2, 3, 4, 5],

@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...src.dbt.adapters.depp import PolarsDbt, SessionObject
+    from ...src.dbt.adapters.depp.typing import PolarsDbt, SessionObject
 
 
 def model(dbt: "PolarsDbt", session: "SessionObject"):
