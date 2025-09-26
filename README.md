@@ -1,29 +1,28 @@
 # DEPP - DBT Python Postgres Adapter
 This package support for running python models in dbt for postgres directly within your dbt project
 Inspired on dbt-fal but made to be both extremely high performance and fully typed
-Also supports polars dataframe besides pandas and more are comming soon
+Also supports polars dataframe besides pandas and more are coming soon
 
 ## Features
-
-- Run Python scripts as dbt models
-- Python Docs string are automatically added as descriptin in docs (more doc improvement soon)
-- Python models are fully typed
-- Currently support for both pandas and polars dataframes (more comming soon)
-- Blazing performance using connectorx, asyncpg
-- Seamless integration with PostgreSQL databases (more comming soon)
+- **Run Python scripts as dbt models** - Write Python logic directly in your dbt project
+- **Fully typed Python models** - Complete type safety with IDE support ([see typing docs](docs/typing.md))
+- **Multiple DataFrame libraries** - Support for both pandas and Polars dataframes (more comming soon)
+- **Auto-generated documentation** - Python docstrings automatically become model descriptions in dbt docs
+- **High performance** - Blazing fast execution using connectorx and asyncpg
+- **PostgreSQL integration** - Seamless integration with PostgreSQL databases
 
 ## Installation
 
 Install using [uv](https://docs.astral.sh/uv/) (recommended):
 
 ```bash
-uv add depp
+uv add dbt-debb
 ```
 
 Or using pip:
 
 ```bash
-pip install depp
+pip install dbt-depp
 ```
 
 ## Quick Start
@@ -55,14 +54,30 @@ your_project:
 2. Create Python models in your dbt project:
 
 ```python
-# models/my_python_model.py
+# models/customer_analysis.py
+"""Analyze customer purchase patterns using Polars."""
 import polars as pl
+from dbt.adapters.depp.typing import PolarsDbt, SessionObject
 
-def model(dbt, session):
-    dbt.config(library="polars")
-    # Your Python logic here
-    df = pl.DataFrame({'column1': [1, 2, 3], 'column2': ['a', 'b', 'c']})
-    return df
+def model(dbt: PolarsDbt, session: SessionObject) -> pl.DataFrame:
+    # Reference existing models with full type safety
+    customers_df = dbt.ref("customers")
+    orders_df = dbt.ref("orders")
+
+    # Perform analysis using Polars
+    result = (
+        customers_df
+        .join(orders_df, on="customer_id", how="inner")
+        .group_by("customer_region")
+        .agg([
+            pl.col("order_amount").sum().alias("total_revenue"),
+            pl.col("customer_id").n_unique().alias("unique_customers"),
+            pl.col("order_amount").mean().alias("avg_order_value")
+        ])
+        .sort("total_revenue", descending=True)
+    )
+
+    return result
 ```
 3. `dbt run`!
 
@@ -79,6 +94,11 @@ uv run pytest
 # Build package
 uv build
 ```
+
+## Documentation
+
+- **[Getting Started Guide](docs/getting-started.md)** - Complete setup guide including profiles.yml configuration and first Python models
+- **[Type Safety Guide](docs/typing.md)** - Complete guide to using DEPP's type system for better IDE support and code safety
 
 ## Requirements
 

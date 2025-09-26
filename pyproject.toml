@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 authors = [
     { name = "Yassin Chibrani", email = "y.chibrani@gmail.com" }]
-keywords = ["dbt", "pandas", "runtime"]
+keywords = ["dbt", "pandas", "runtime", "polars", "high-performance", "etl", "analytics", "data-engineering", "elt"]
 license = { text = "MIT" }
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -31,7 +31,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-postgres = []
 dev = [
     "matplotlib>=3.5.2",
     "requests>=2.32.3",
