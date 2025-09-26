@@ -1,5 +1,5 @@
 [project]
-name = "depp"
+name = "dbt-depp"
 dynamic = ["version"]
 description = "DBT Enexis Python Postgres adapter - Run python scripts from any dbt project."
 readme = "README.md"

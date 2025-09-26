@@ -2,6 +2,6 @@
 
 from importlib.metadata import version
 
-__version__ = ".".join(version("depp").split(".")[:3])
+__version__ = ".".join(version("dbt-depp").split(".")[:3])
 
 version = __version__
