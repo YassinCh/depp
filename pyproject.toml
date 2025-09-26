@@ -1,6 +1,6 @@
 [project]
 name = "depp"
-version = "0.1.0"
+dynamic = ["version"]
 description = "DBT Enexis Python Postgres adapter - Run python scripts from any dbt project."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -15,9 +15,6 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12"
 ]
-[project.urls]
-Homepage = "https://github.com/YassinCh/depp"
-Repository = "https://github.com/YassinCh/depp"
 
 dependencies = [
     "dbt-core>=1.10.0",
@@ -39,10 +36,18 @@ dev = [
     "matplotlib>=3.5.2",
     "requests>=2.32.3",
 ]
+[project.urls]
+Homepage = "https://github.com/YassinCh/depp"
+Repository = "https://github.com/YassinCh/depp"
+
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.0.0"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dbt"]
