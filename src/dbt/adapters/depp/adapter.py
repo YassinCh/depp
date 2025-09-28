@@ -1,3 +1,4 @@
+import contextlib
 import inspect
 from functools import lru_cache
 from multiprocessing.context import SpawnContext
@@ -23,11 +24,11 @@ from dbt.parser.manifest import ManifestLoader
 
 from .config import (
     AdapterTypeDescriptor,
+    DbInfo,
     DeppCredentials,
     DeppCredentialsWrapper,
     ModelConfig,
     RelationDescriptor,
-    get_db_profile_info,
 )
 from .executors import *  # noqa
 from .executors import AbstractPythonExecutor
@@ -51,11 +52,8 @@ class DeppAdapter(metaclass=AdapterMeta):
         instance = super().__new__(cls)
         db_creds = cls.get_db_credentials(config)
 
-        db_info = get_db_profile_info()
-        if db_info.override_properties:
-            for key in db_info.override_properties:
-                if db_info.override_properties[key] is not None:
-                    setattr(config, key, db_info.override_properties[key])
+        db_info = DbInfo.get_cached_with_relation()
+        db_info.apply_overrides(config)
 
         with release_plugin_lock():
             db_adapter: Type[BaseAdapter] = FACTORY.get_adapter_class_by_name(  # type: ignore
@@ -95,31 +93,28 @@ class DeppAdapter(metaclass=AdapterMeta):
         self, parsed_model: dict[str, Any], library: str
     ) -> AbstractPythonExecutor[Any]:
         """Get Python executor based on model's configured library"""
-        executor_class = AbstractPythonExecutor.registry.get(library)
+        registry = AbstractPythonExecutor.registry
+        executor_class = registry.get(library)
         if executor_class is None:
-            raise ValueError(
-                f"No library '{library}'. Available: {list(AbstractPythonExecutor.registry.keys())}"
-            )
+            raise ValueError(f"No '{library}'. Available: {list(registry.keys())}")
         return executor_class(parsed_model, self.db_creds, library)  # type: ignore
 
     @available
     def db_materialization(self, context: dict[str, Any], materialization: str):
         """Execute database materialization macro."""
-        materialization_macro = self.manifest.find_materialization_macro_by_name(
+        macro = self.manifest.find_materialization_macro_by_name(
             self.config.project_name, materialization, self._db_adapter.type()
         )
-        if materialization_macro is None:
+        if macro is None:
             raise ValueError("Invalid Macro")
-        return MacroGenerator(
-            materialization_macro, context, stack=context["context_macro_stack"]
-        )()
+        return MacroGenerator(macro, context, stack=context["context_macro_stack"])()
 
     @classmethod
     def get_db_credentials(cls, config: RuntimeConfig) -> Credentials:
         """Extract database credentials from adapter configuration."""
         dep_credentials: DeppCredentials | DeppCredentialsWrapper = config.credentials  # type: ignore
         if isinstance(dep_credentials, DeppCredentials):
-            db_info = get_db_profile_info()
+            db_info = DbInfo.get_cached_with_relation()
             return db_info.profile.credentials
         with release_plugin_lock():
             FACTORY.load_plugin(dep_credentials.db_creds.type)
@@ -169,18 +164,17 @@ class DeppAdapter(metaclass=AdapterMeta):
 
     def _find_parent_manifest(self) -> Manifest | None:
         """Find manifest from parent GenerateTask if it exists"""
-        try:
-            frame = inspect.currentframe()
-            while frame := frame.f_back:  # type: ignore
+        frame = inspect.currentframe()
+        if frame is None:
+            return None
+        with contextlib.suppress(Exception):
+            while frame := frame.f_back:
                 if (
                     (obj := frame.f_locals.get("self"))
                     and type(obj).__name__ == "GenerateTask"
-                    and hasattr(obj, "manifest")
-                    and obj.manifest
+                    and getattr(obj, "manifest", None)
                 ):
                     return obj.manifest
-        except Exception:
-            pass
         return None
 
     def inject_docstring(self, manifest: Manifest):
