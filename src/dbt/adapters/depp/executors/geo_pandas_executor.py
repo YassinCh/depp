@@ -2,7 +2,7 @@ import io
 import re
 
 import connectorx as cx
-import geopandas as gpd
+import geopandas as gpd  # type: ignore
 import numpy as np
 from geoalchemy2 import Geometry
 from sqlalchemy import create_engine
@@ -12,6 +12,7 @@ from .abstract_executor import AbstractPythonExecutor, SourceInfo
 
 class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
     library_name = "geopandas"
+    handled_types = ["GeoPandasDbt"]
 
     @staticmethod
     def detect_geometry_column(value: str) -> bool:

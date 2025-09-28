@@ -30,13 +30,23 @@ class AbstractPythonExecutor(ABC, Generic[DataFrameType]):
     """
 
     registry: dict[str, type["AbstractPythonExecutor[Any]"]] = {}
+    type_mapping: dict[str, str] = {}
     library_name: str | None = None
+    handled_types: list[str] = []
 
     def __init_subclass__(cls, **kwargs: Any):
         """Automatically registers the executor to a registry"""
         super().__init_subclass__(**kwargs)
         if cls.library_name is not None:
             AbstractPythonExecutor.registry[cls.library_name] = cls
+            # Build the type mapping from handled_types
+            for type_hint in getattr(cls, 'handled_types', []):
+                AbstractPythonExecutor.type_mapping[type_hint] = cls.library_name
+
+    @classmethod
+    def get_library_for_type(cls, type_hint: str) -> str | None:
+        """Get the library name for a given type hint."""
+        return cls.type_mapping.get(type_hint)
 
     def __init__(self, parsed: dict[str, Any], db: Credentials, lib: str = "polars"):
         if not isinstance(db, PostgresCredentials):

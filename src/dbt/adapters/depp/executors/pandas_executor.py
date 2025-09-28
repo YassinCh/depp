@@ -6,6 +6,7 @@ from .abstract_executor import AbstractPythonExecutor
 
 class PandasPythonExecutor(AbstractPythonExecutor[pd.DataFrame]):
     library_name = "pandas"
+    handled_types = ["PandasDbt"]
 
     def prepare_bulk_write(self, df: pd.DataFrame, table: str, schema: str):
         engine = create_engine(self.conn_string)

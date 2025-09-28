@@ -25,21 +25,14 @@ from .config import (
     AdapterTypeDescriptor,
     DeppCredentials,
     DeppCredentialsWrapper,
+    ModelConfig,
     RelationDescriptor,
     get_db_profile_info,
 )
 from .executors import *  # noqa
 from .executors import AbstractPythonExecutor
-from .utils import get_library_from_typehint
 from .utils.ast_utils import extract_python_docstring
 from .utils.general import logs, release_plugin_lock
-
-# TODO: Auto generate mapping
-LIBRARY_MAP = {
-    "PandasDbt": "pandas",
-    "PolarsDbt": "polars",
-    "GeoPandasDbt": "geopandas",
-}
 
 
 class DeppAdapter(metaclass=AdapterMeta):
@@ -93,20 +86,15 @@ class DeppAdapter(metaclass=AdapterMeta):
     def submit_python_job(self, parsed_model: dict[str, Any], compiled_code: str):
         # TODO: Add remote executors
         """Execute Python model code selecting the requested executor."""
-
-        detected_library = get_library_from_typehint(compiled_code, LIBRARY_MAP)
-        if detected_library and not parsed_model.get("config", {}).get("library"):
-            if "config" not in parsed_model:
-                parsed_model["config"] = {}
-            parsed_model["config"]["library"] = detected_library
-        executor = self.get_executor(parsed_model)
+        config = ModelConfig.from_model(parsed_model, compiled_code)
+        executor = self.get_executor(parsed_model, config.library)
         result = executor.submit(compiled_code)
         return AdapterResponse(_message=f"PYTHON | {result}")
 
-    def get_executor(self, parsed_model: dict[str, Any]) -> AbstractPythonExecutor[Any]:
-        """Get Python executor based on model's configured library (default: polars)."""
-        # TODO: this is still a bit meh
-        library = parsed_model.get("config", {}).get("library", "pandas")
+    def get_executor(
+        self, parsed_model: dict[str, Any], library: str
+    ) -> AbstractPythonExecutor[Any]:
+        """Get Python executor based on model's configured library"""
         executor_class = AbstractPythonExecutor.registry.get(library)
         if executor_class is None:
             raise ValueError(
