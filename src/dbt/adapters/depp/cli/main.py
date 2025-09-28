@@ -1,7 +1,8 @@
 """Main CLI module for dbt-depp using cyclopts."""
 
-import cyclopts
 from typing import Annotated, Optional
+
+import cyclopts
 
 app = cyclopts.App(
     name="dbt-depp",
@@ -14,7 +15,7 @@ def run(
     model: Annotated[Optional[str], cyclopts.Parameter(help="Model to run")] = None,
     profile: Annotated[str, cyclopts.Parameter(help="Profile to use")] = "default",
     verbose: Annotated[bool, cyclopts.Parameter(help="Enable verbose output")] = False,
-):
+) -> None:
     """Run a dbt model with the depp adapter."""
     if verbose:
         print(f"Running model: {model} with profile: {profile}")
@@ -26,7 +27,7 @@ def run(
 def compile(
     model: Annotated[Optional[str], cyclopts.Parameter(help="Model to compile")] = None,
     profile: Annotated[str, cyclopts.Parameter(help="Profile to use")] = "default",
-):
+) -> None:
     """Compile a dbt model."""
     print(f"Compiling model: {model} with profile: {profile}")
 
@@ -35,12 +36,12 @@ def compile(
 def test(
     model: Annotated[Optional[str], cyclopts.Parameter(help="Model to test")] = None,
     profile: Annotated[str, cyclopts.Parameter(help="Profile to use")] = "default",
-):
+) -> None:
     """Run tests for a dbt model."""
     print(f"Testing model: {model} with profile: {profile}")
 
 
-def main():
+def main() -> None:
     """Entry point for the CLI."""
     app()
 

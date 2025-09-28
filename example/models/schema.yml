@@ -3,17 +3,21 @@ version: 2
 
 sources:
   - name: raw_data
-    database: example_db
+    database: test
     schema: public
     tables:
-      - name: raw_orders
+      - name: result_table
         columns:
-          - name: order_id
-          - name: customer_id
-          - name: product_id
-          - name: order_date
-          - name: amount
-
+          - name: id
+          - name: e_ms_verbinding_id
+          - name: e_ms_kabel_id
+          - name: ligging_kaart
+          - name: beschrijving
+          - name: lengte_kaart
+          - name: van_e_station_id
+          - name: naar_e_station_id
+          - name: ligging
+          
   - name: benchmark_data
     description: "Source tables for benchmarking"
     database: example_db

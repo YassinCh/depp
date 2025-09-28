@@ -4,8 +4,8 @@ test_project:
     dev_depp:
       type: depp
       db_profile: dev_postgres
-      database: example_db
-      schema: test
+      database: test
+      schema: public
       
     dev_postgres:
       type: postgres
@@ -13,6 +13,6 @@ test_project:
       user: postgres
       password: postgres
       port: 5433
-      database: example_db
-      schema: test
+      database: test
+      schema: public
       threads: 1

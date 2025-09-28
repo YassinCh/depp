@@ -32,6 +32,7 @@ dependencies = [
     "snakeviz>=2.2.2",
     "geopandas>=1.1.1",
     "cyclopts>=3.24.0",
+    "mypy>=1.18.2",
 ]
 
 [project.optional-dependencies]

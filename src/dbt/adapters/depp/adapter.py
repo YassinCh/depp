@@ -174,10 +174,10 @@ class DeppAdapter(metaclass=AdapterMeta):
                     and type(obj).__name__ == "GenerateTask"
                     and getattr(obj, "manifest", None)
                 ):
-                    return obj.manifest
+                    return obj.manifest  # type: ignore
         return None
 
-    def inject_docstring(self, manifest: Manifest):
+    def inject_docstring(self, manifest: Manifest) -> None:
         """Extract Python model docstrings as descriptions (YAML takes precedence)"""
         project_root = Path(self.config.project_root)
         for node in manifest.nodes.values():

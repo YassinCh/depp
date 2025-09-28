@@ -3,9 +3,9 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...src.dbt.adapters.depp.typing import PolarsDbt, SessionObject
+    from ...src.dbt.adapters.depp.typing import GeoPandasDbt, SessionObject
 
 
-def model(dbt: "PolarsDbt", session: "SessionObject"):
-    products_df = dbt.ref("base_sql_model")
+def model(dbt: "GeoPandasDbt", session: "SessionObject"):
+    products_df = dbt.source("raw_data", "result_table")
     return products_df

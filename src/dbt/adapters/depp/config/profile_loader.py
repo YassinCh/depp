@@ -70,7 +70,7 @@ class DbInfo:
 class RelationDescriptor:
     """Descriptor that lazily loads and caches the Relation class"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._relation = None
 
     def __get__(self, instance: "DeppAdapter", owner: "type[DeppAdapter]"):

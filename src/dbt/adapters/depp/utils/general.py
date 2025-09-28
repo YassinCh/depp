@@ -3,7 +3,7 @@ import time
 from contextlib import contextmanager
 from functools import wraps
 from types import FrameType
-from typing import TYPE_CHECKING, Callable, Concatenate, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Callable, Concatenate, Iterator, ParamSpec, TypeVar
 
 from dbt.adapters.contracts.connection import AdapterResponse
 from dbt.adapters.events.types import CodeExecution, CodeExecutionStatus
@@ -48,7 +48,7 @@ def find_funcs_in_stack(funcs: set[str]) -> bool:
 
 
 @contextmanager
-def release_plugin_lock():
+def release_plugin_lock() -> Iterator[None]:
     FACTORY.lock.release()
     try:
         yield

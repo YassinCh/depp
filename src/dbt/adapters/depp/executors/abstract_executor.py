@@ -40,7 +40,7 @@ class AbstractPythonExecutor(ABC, Generic[DataFrameType]):
         if cls.library_name is not None:
             AbstractPythonExecutor.registry[cls.library_name] = cls
             # Build the type mapping from handled_types
-            for type_hint in getattr(cls, 'handled_types', []):
+            for type_hint in getattr(cls, "handled_types", []):
                 AbstractPythonExecutor.type_mapping[type_hint] = cls.library_name
 
     @classmethod
