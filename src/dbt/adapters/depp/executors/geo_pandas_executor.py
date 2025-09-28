@@ -1,5 +1,6 @@
 import io
 import re
+import time
 
 import connectorx as cx
 import geopandas as gpd
@@ -44,7 +45,7 @@ class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
         df_copy = df.copy()
         geom_cols = df_copy.select_dtypes(include="geometry").columns  # type: ignore
         for col in geom_cols:  # type: ignore
-            df_copy[col] = df_copy[col].to_wkb_hex().fillna("\\N")  # type: ignore
+            df_copy[col] = df_copy[col].to_wkt().fillna("\\N")  # type: ignore
 
         output = io.StringIO()
         np_array = df_copy.to_numpy()

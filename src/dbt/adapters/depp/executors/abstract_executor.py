@@ -1,5 +1,6 @@
 import asyncio
 import io
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
@@ -92,6 +93,7 @@ class AbstractPythonExecutor(ABC, Generic[DataFrameType]):
         self, table_name: str, df: DataFrameType
     ) -> ExecutionResult:
         """Asynchronously bulk write DataFrame using PostgreSQL COPY."""
+
         parts = table_name.replace('"', "").split(".")
         schema, table = parts[-2], parts[-1]
 
