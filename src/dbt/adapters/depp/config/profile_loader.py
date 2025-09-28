@@ -1,16 +1,30 @@
 from argparse import Namespace
-from typing import Any
+from dataclasses import dataclass
+from functools import lru_cache
+from typing import TYPE_CHECKING, Any
 
+from dbt.adapters.factory import FACTORY
+from dbt.adapters.protocol import RelationProtocol
 from dbt.config.profile import Profile, read_profile
 from dbt.config.renderer import ProfileRenderer
 from dbt.flags import get_flags
 
 from ..utils import find_profile, find_target
 
+if TYPE_CHECKING:
+    from ..adapter import DeppAdapter
 
-def load_profile_info() -> tuple[Profile, dict[str, Any]]:
+
+@dataclass
+class DbInfo:
+    profile: Profile
+    override_properties: dict[str, Any]
+    relation: RelationProtocol | None = None
+
+
+def load_profile_info() -> DbInfo:
     """Load database profile from depp adapter configuration"""
-    # TODO: some of this code feels like it could use an upgrade also returning tuple isn't ideal
+    # TODO: some of this code feels like it could use an upgrade
     flags: Namespace = get_flags()  # type: ignore
     renderer = ProfileRenderer(getattr(flags, "VARS", {}))
 
@@ -29,4 +43,23 @@ def load_profile_info() -> tuple[Profile, dict[str, Any]]:
 
     threads = getattr(flags, "THREADS", depp_dict.get("threads") or db_profile.threads)
     override_properties = dict(threads=threads)
-    return db_profile, override_properties
+    return DbInfo(db_profile, override_properties)
+
+
+@lru_cache(maxsize=1)
+def get_db_profile_info():
+    db_info = load_profile_info()
+    relation = FACTORY.get_relation_class_by_name(db_info.profile.credentials.type)
+    return DbInfo(db_info.profile, db_info.override_properties, relation)
+
+
+class RelationDescriptor:
+    """Descriptor that lazily loads and caches the Relation class"""
+
+    def __init__(self):
+        self._relation = None
+
+    def __get__(self, instance: "DeppAdapter", owner: "type[DeppAdapter]"):
+        if self._relation is None:
+            self._relation = get_db_profile_info().relation
+        return self._relation

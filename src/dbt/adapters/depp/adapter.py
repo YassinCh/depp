@@ -25,23 +25,28 @@ from .config import (
     AdapterTypeDescriptor,
     DeppCredentials,
     DeppCredentialsWrapper,
-    get_library_from_model,
-    load_profile_info,
+    RelationDescriptor,
+    get_db_profile_info,
 )
-from .docstring_utils import extract_python_docstring
 from .executors import *  # noqa
 from .executors import AbstractPythonExecutor
-from .utils import logs, release_plugin_lock
+from .utils import get_library_from_typehint
+from .utils.ast_utils import extract_python_docstring
+from .utils.general import logs, release_plugin_lock
 
-DB_PROFILE, OVERRIDE_PROPERTIES = load_profile_info()
-DB_RELATION = FACTORY.get_relation_class_by_name(DB_PROFILE.credentials.type)
+# TODO: Auto generate mapping
+LIBRARY_MAP = {
+    "PandasDbt": "pandas",
+    "PolarsDbt": "polars",
+    "GeoPandasDbt": "geopandas",
+}
 
 
-class PythonAdapter(metaclass=AdapterMeta):
+class DeppAdapter(metaclass=AdapterMeta):
     # TODO: fix type ignores where possible
     """DBT adapter for executing Python models with database backends."""
 
-    Relation = DB_RELATION
+    Relation = RelationDescriptor()
     AdapterSpecificConfigs = AdapterConfig
     type = AdapterTypeDescriptor()
     _db_adapter_class: Type[BaseAdapter]
@@ -53,9 +58,11 @@ class PythonAdapter(metaclass=AdapterMeta):
         instance = super().__new__(cls)
         db_creds = cls.get_db_credentials(config)
 
-        for key in OVERRIDE_PROPERTIES:
-            if OVERRIDE_PROPERTIES[key] is not None:
-                setattr(config, key, OVERRIDE_PROPERTIES[key])
+        db_info = get_db_profile_info()
+        if db_info.override_properties:
+            for key in db_info.override_properties:
+                if db_info.override_properties[key] is not None:
+                    setattr(config, key, db_info.override_properties[key])
 
         with release_plugin_lock():
             db_adapter: Type[BaseAdapter] = FACTORY.get_adapter_class_by_name(  # type: ignore
@@ -86,7 +93,8 @@ class PythonAdapter(metaclass=AdapterMeta):
     def submit_python_job(self, parsed_model: dict[str, Any], compiled_code: str):
         # TODO: Add remote executors
         """Execute Python model code selecting the requested executor."""
-        detected_library = get_library_from_model(compiled_code)
+
+        detected_library = get_library_from_typehint(compiled_code, LIBRARY_MAP)
         if detected_library and not parsed_model.get("config", {}).get("library"):
             if "config" not in parsed_model:
                 parsed_model["config"] = {}
@@ -123,7 +131,8 @@ class PythonAdapter(metaclass=AdapterMeta):
         """Extract database credentials from adapter configuration."""
         dep_credentials: DeppCredentials | DeppCredentialsWrapper = config.credentials  # type: ignore
         if isinstance(dep_credentials, DeppCredentials):
-            return DB_PROFILE.credentials
+            db_info = get_db_profile_info()
+            return db_info.profile.credentials
         with release_plugin_lock():
             FACTORY.load_plugin(dep_credentials.db_creds.type)
         return dep_credentials.db_creds

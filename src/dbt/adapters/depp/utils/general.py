@@ -3,19 +3,17 @@ import time
 from contextlib import contextmanager
 from functools import wraps
 from types import FrameType
-from typing import TYPE_CHECKING, Any, Callable, Concatenate, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Callable, Concatenate, ParamSpec, TypeVar
 
 from dbt.adapters.contracts.connection import AdapterResponse
 from dbt.adapters.events.types import CodeExecution, CodeExecutionStatus
 from dbt.adapters.factory import FACTORY
-from dbt.config.project import load_raw_project
-from dbt.config.renderer import ProfileRenderer
 from dbt_common.events.functions import fire_event
 
 if TYPE_CHECKING:
-    from .adapter import PythonAdapter
+    from ..adapter import DeppAdapter
 
-T = TypeVar("T", bound="PythonAdapter")
+T = TypeVar("T", bound="DeppAdapter")
 P = ParamSpec("P")
 
 funcT = Callable[Concatenate[T, P], AdapterResponse]
@@ -56,19 +54,3 @@ def release_plugin_lock():
         yield
     finally:
         FACTORY.lock.acquire()
-
-
-def find_profile(override: str | None, root: str, rendered: ProfileRenderer):
-    if override is not None:
-        return override
-
-    raw_profile = load_raw_project(root).get("profile")
-    return rendered.render_value(raw_profile)
-
-
-def find_target(override: str | None, profile: dict[str, Any], render: ProfileRenderer):
-    if override is not None:
-        return override
-    if "target" in profile:
-        return render.render_value(profile["target"])
-    return "default"

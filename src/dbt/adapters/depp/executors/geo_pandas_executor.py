@@ -1,6 +1,5 @@
 import io
 import re
-import time
 
 import connectorx as cx
 import geopandas as gpd

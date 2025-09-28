@@ -1,10 +1,10 @@
 from functools import partial
 from typing import TYPE_CHECKING
 
-from ..utils import find_funcs_in_stack
+from ..utils.general import find_funcs_in_stack
 
 if TYPE_CHECKING:
-    from ..adapter import PythonAdapter
+    from ..adapter import DeppAdapter
 
 ADAPTER_NAME = "depp"
 
@@ -14,9 +14,9 @@ class AdapterTypeDescriptor:
     type_str: str = ADAPTER_NAME
 
     def __get__(
-        self, obj: "PythonAdapter | None", objtype: type["PythonAdapter"] | None = None
+        self, obj: "DeppAdapter | None", objtype: type["DeppAdapter"] | None = None
     ):
-        def _type(instance: "PythonAdapter | None" = None):
+        def _type(instance: "DeppAdapter | None" = None):
             if instance is None:
                 return ADAPTER_NAME
             if find_funcs_in_stack({"render", "db_materialization"}):
