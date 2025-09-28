@@ -1,7 +1,12 @@
+from typing import TYPE_CHECKING
+
 import pandas as pd
 
+if TYPE_CHECKING:
+    from ...src.dbt.adapters.depp.typing import PandasDbt, SessionObject
 
-def model(dbt, session):
+
+def model(dbt: "PandasDbt", session: "SessionObject"):
     """
     Creates a simple customer table with sample data.
 

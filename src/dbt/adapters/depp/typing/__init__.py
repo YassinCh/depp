@@ -1,4 +1,4 @@
-import geopandas as gpd  # type: ignore
+import geopandas as gpd
 import pandas as pd
 
 from .base import DbtConfig, DbtThis, SessionObject

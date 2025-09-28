@@ -2,9 +2,10 @@ import io
 import re
 
 import connectorx as cx
-import geopandas as gpd  # type: ignore
+import geopandas as gpd
 import numpy as np
 from geoalchemy2 import Geometry
+from geopandas.array import GeometryDtype
 from sqlalchemy import create_engine
 
 from .abstract_executor import AbstractPythonExecutor, SourceInfo
@@ -27,25 +28,28 @@ class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
 
     def prepare_bulk_write(self, df: gpd.GeoDataFrame, table: str, schema: str) -> str:
         engine = create_engine(self.conn_string)
-        dtype_mapping = {}
-
-        for col, dtype in df.dtypes.items():
-            if dtype == "geometry":
-                dtype_mapping[col] = Geometry("GEOMETRY", srid=4326)
-
+        dtype_mapping = {
+            col: Geometry("GEOMETRY", srid=4326)
+            for col, dtype in df.dtypes.items()
+            if dtype == "geometry"
+        }
         df.head(1).to_postgis(
             name=table,
             con=engine,
             schema=schema,
             if_exists="replace",
             index=False,
-            dtype=dtype_mapping,  # type: ignore
+            dtype=dtype_mapping,
         )
 
         df_copy = df.copy()
-        geom_cols = df_copy.select_dtypes(include="geometry").columns  # type: ignore
-        for col in geom_cols:  # type: ignore
-            df_copy[col] = df_copy[col].to_wkt().fillna("\\N")  # type: ignore
+        geom_cols = [
+            col
+            for col in df_copy.columns
+            if isinstance(df_copy[col].dtype, GeometryDtype)
+        ]
+        for col in geom_cols:
+            df_copy[col] = df_copy[col].to_wkt().fillna("\\N")
 
         output = io.StringIO()
         np_array = df_copy.to_numpy()
@@ -60,11 +64,11 @@ class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
             FROM geometry_columns 
             WHERE f_table_schema = '{schema}' AND f_table_name = '{table}'
         """
-        geom_df = cx.read_sql(self.conn_string, query)  # type: ignore
+        geom_df = cx.read_sql(self.conn_string, query)
         srid = int(geom_df["srid"].iloc[0])
         return dict(zip(geom_df["col_name"], geom_df["geom_type"])), srid
 
-    def _get_all_columns(self, source: SourceInfo):
+    def _get_all_columns(self, source: SourceInfo) -> list[str]:
         # TODO: Find out if this can cause deadlocks on information_schema
         print(source.full_name)
         cols_query = f"""
@@ -74,7 +78,7 @@ class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
                    OR table_name = '{source.full_name}')
             ORDER BY ordinal_position
         """
-        return cx.read_sql(self.conn_string, cols_query)["column_name"]  # type: ignore
+        return cx.read_sql(self.conn_string, cols_query)["column_name"].tolist()
 
     def read_df(self, table_name: str) -> gpd.GeoDataFrame:
         """Read PostGIS table."""
@@ -87,7 +91,7 @@ class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
             f"ST_AsBinary({c}) as {c}_wkb" for c in geom_cols
         ]
         query = f"SELECT {', '.join(select_parts)} FROM {table_name}"
-        df = cx.read_sql(self.conn_string, query, protocol="binary")  # type: ignore
+        df = cx.read_sql(self.conn_string, query, protocol="binary")
         wkb_cols = [f"{col}_wkb" for col in geom_cols]
         for col in geom_cols:
             df[col] = gpd.GeoSeries.from_wkb(df[f"{col}_wkb"])

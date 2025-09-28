@@ -31,6 +31,8 @@ class DbInfo:
         renderer = ProfileRenderer(getattr(flags, "VARS", {}))
 
         name = find_profile(flags.PROFILE, flags.PROJECT_DIR, renderer)
+        if name is None:
+            raise ValueError("Profile name not found")
         profile = read_profile(flags.PROFILES_DIR)[name]
         target_name = find_target(flags.TARGET, profile, renderer)
         _, depp_dict = Profile.render_profile(profile, name, target_name, renderer)
@@ -71,9 +73,9 @@ class RelationDescriptor:
     """Descriptor that lazily loads and caches the Relation class"""
 
     def __init__(self) -> None:
-        self._relation = None
+        self._relation: RelationProtocol | None = None
 
-    def __get__(self, instance: "DeppAdapter", owner: "type[DeppAdapter]"):
+    def __get__(self, instance: "DeppAdapter | None", owner: "type[DeppAdapter] | None") -> RelationProtocol | None:
         if self._relation is None:
             self._relation = DbInfo.get_cached_with_relation().relation
         return self._relation

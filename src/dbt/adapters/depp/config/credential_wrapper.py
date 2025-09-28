@@ -13,14 +13,14 @@ class DeppCredentialsWrapper:
         self._db_creds = db_creds
 
     @property
-    def type(self):
+    def type(self) -> str:
         # TODO: duplicate logic also present in adapter_type.py
         if find_funcs_in_stack({"to_target_dict", "db_materialization"}):
             return self.db_creds.type
         return ADAPTER_NAME
 
     @property
-    def db_creds(self):
+    def db_creds(self) -> Credentials:
         if self._db_creds is None:
             raise ValueError("No valid DB Credentials")
         return self._db_creds

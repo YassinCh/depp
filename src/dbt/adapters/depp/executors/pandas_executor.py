@@ -8,7 +8,7 @@ class PandasPythonExecutor(AbstractPythonExecutor[pd.DataFrame]):
     library_name = "pandas"
     handled_types = ["PandasDbt"]
 
-    def prepare_bulk_write(self, df: pd.DataFrame, table: str, schema: str):
+    def prepare_bulk_write(self, df: pd.DataFrame, table: str, schema: str) -> str:
         engine = create_engine(self.conn_string)
         df.head(1).to_sql(
             name=table, con=engine, schema=schema, if_exists="replace", index=False

@@ -4,9 +4,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
 
-import asyncpg  # type: ignore
+import asyncpg  # type: ignore[import-untyped]
 import connectorx as cx
-from asyncpg import Connection  # type: ignore
+from asyncpg import Connection
 from dbt.adapters.contracts.connection import Credentials
 from dbt.adapters.postgres.connections import PostgresCredentials
 
@@ -70,10 +70,11 @@ class AbstractPythonExecutor(ABC, Generic[DataFrameType]):
         source = self.get_source_info(table_name)
         query = f'SELECT * FROM "{source.schema}"."{source.table}"'
 
-        # type ignores are needed as connectorx is untyped
-        return cx.read_sql(  # type: ignore
+        # connectorx is untyped
+        result = cx.read_sql(
             self.conn_string, query, return_type=self.library, protocol="binary"
-        )  # type: ignore
+        )
+        return result  # type: ignore[return-value]
 
     def write_df(self, table_name: str, dataframe: DataFrameType) -> ExecutionResult:
         """Write DataFrame to database table using async bulk copy."""
@@ -106,14 +107,14 @@ class AbstractPythonExecutor(ABC, Generic[DataFrameType]):
         parts = table_name.replace('"', "").split(".")
         schema, table = parts[-2], parts[-1]
 
-        conn: Connection = await asyncpg.connect(dsn=self.conn_string)  # type: ignore
+        conn: Connection = await asyncpg.connect(dsn=self.conn_string)
 
         csv_buffer = io.BytesIO()
         csv_string = self.prepare_bulk_write(df, table, schema)
         csv_buffer.write(csv_string.encode("utf-8"))
         csv_buffer.seek(0)
 
-        rows_copied: str = await conn.copy_to_table(  # type: ignore
+        rows_copied: str = await conn.copy_to_table(
             table_name=table,
             schema_name=schema,
             source=csv_buffer,
@@ -122,10 +123,10 @@ class AbstractPythonExecutor(ABC, Generic[DataFrameType]):
             null="\\N",
         )
 
-        await conn.close()  # type: ignore
+        await conn.close()
 
-        # ? ??? split is partially unkown ????
-        rows_effected = int(rows_copied.split(sep=" ")[-1])  # type: ignore
+        # Extract row count from COPY result
+        rows_effected = int(rows_copied.split(sep=" ")[-1])
         return ExecutionResult(
             rows_affected=rows_effected,
             table_name=table_name,
@@ -139,7 +140,8 @@ class AbstractPythonExecutor(ABC, Generic[DataFrameType]):
         exec(compiled_code, local_vars)
         if "main" not in local_vars:
             raise RuntimeError("No main function found in compiled code")
-        return local_vars["main"](self.read_df, self.write_df)
+        result = local_vars["main"](self.read_df, self.write_df)
+        return ExecutionResult(**result) if isinstance(result, dict) else result
 
     @staticmethod
     def get_connection_string(db_creds: PostgresCredentials) -> str:

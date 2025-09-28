@@ -32,10 +32,10 @@ def logs(func: funcT[T, P]) -> funcT[T, P]:
         response = func(self, *args, **kwargs)
         elapsed = round((time.time() - start_time), 2)
 
-        fire_event(CodeExecutionStatus(status=response._message, elapsed=elapsed))  # type: ignore
+        fire_event(CodeExecutionStatus(status=response.__str__(), elapsed=elapsed))
         return response
 
-    return logs
+    return logs  # type: ignore[return-value]
 
 
 def find_funcs_in_stack(funcs: set[str]) -> bool:

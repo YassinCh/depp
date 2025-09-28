@@ -1,5 +1,5 @@
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from ..utils.general import find_funcs_in_stack
 
@@ -15,8 +15,8 @@ class AdapterTypeDescriptor:
 
     def __get__(
         self, obj: "DeppAdapter | None", objtype: type["DeppAdapter"] | None = None
-    ):
-        def _type(instance: "DeppAdapter | None" = None):
+    ) -> Callable[[], str] | partial[str]:
+        def _type(instance: "DeppAdapter | None" = None) -> str:
             if instance is None:
                 return ADAPTER_NAME
             if find_funcs_in_stack({"render", "db_materialization"}):

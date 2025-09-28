@@ -33,6 +33,7 @@ dependencies = [
     "geopandas>=1.1.1",
     "cyclopts>=3.24.0",
     "mypy>=1.18.2",
+    "types-geopandas>=1.1.1.20250829",
 ]
 
 [project.optional-dependencies]

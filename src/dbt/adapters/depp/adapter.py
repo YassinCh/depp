@@ -10,10 +10,7 @@ from dbt.adapters.base.meta import AdapterMeta, available
 from dbt.adapters.base.relation import BaseRelation
 from dbt.adapters.contracts.connection import AdapterResponse, Credentials
 from dbt.adapters.contracts.relation import RelationConfig
-from dbt.adapters.factory import (
-    FACTORY,
-    get_adapter_by_type,  # type: ignore
-)
+from dbt.adapters.factory import FACTORY, get_adapter_by_type
 from dbt.adapters.protocol import AdapterConfig
 from dbt.artifacts.resources.types import ModelLanguage
 from dbt.clients.jinja import MacroGenerator
@@ -47,7 +44,7 @@ class DeppAdapter(metaclass=AdapterMeta):
     _db_adapter: BaseAdapter
     db_creds: Credentials
 
-    def __new__(cls, config: RuntimeConfig, mp_context: SpawnContext):
+    def __new__(cls, config: RuntimeConfig, mp_context: SpawnContext) -> "DeppAdapter":
         """Create adapter instance and configure underlying database adapter."""
         instance = super().__new__(cls)
         db_creds = cls.get_db_credentials(config)
@@ -81,7 +78,9 @@ class DeppAdapter(metaclass=AdapterMeta):
         self._parse_replacements_.update(self._db_adapter._parse_replacements_)  # type: ignore
 
     @logs
-    def submit_python_job(self, parsed_model: dict[str, Any], compiled_code: str):
+    def submit_python_job(
+        self, parsed_model: dict[str, Any], compiled_code: str
+    ) -> AdapterResponse:
         # TODO: Add remote executors
         """Execute Python model code selecting the requested executor."""
         config = ModelConfig.from_model(parsed_model, compiled_code)
@@ -97,10 +96,10 @@ class DeppAdapter(metaclass=AdapterMeta):
         executor_class = registry.get(library)
         if executor_class is None:
             raise ValueError(f"No '{library}'. Available: {list(registry.keys())}")
-        return executor_class(parsed_model, self.db_creds, library)  # type: ignore
+        return executor_class(parsed_model, self.db_creds, library)
 
     @available
-    def db_materialization(self, context: dict[str, Any], materialization: str):
+    def db_materialization(self, context: dict[str, Any], materialization: str) -> Any:
         """Execute database materialization macro."""
         macro = self.manifest.find_materialization_macro_by_name(
             self.config.project_name, materialization, self._db_adapter.type()
@@ -120,11 +119,11 @@ class DeppAdapter(metaclass=AdapterMeta):
             FACTORY.load_plugin(dep_credentials.db_creds.type)
         return dep_credentials.db_creds
 
-    def get_compiler(self):
+    def get_compiler(self) -> Compiler:
         """Get DBT compiler instance for this adapter."""
         return Compiler(self.config)
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         """Directly proxy to the DB adapter"""
         if hasattr(self._db_adapter, name):
             return getattr(self._db_adapter, name)
@@ -137,7 +136,7 @@ class DeppAdapter(metaclass=AdapterMeta):
         return False
 
     @property
-    def db_adapter(self):
+    def db_adapter(self) -> BaseAdapter:
         """Access underlying database adapter."""
         return self._db_adapter
 
@@ -154,9 +153,9 @@ class DeppAdapter(metaclass=AdapterMeta):
         relations: set[BaseRelation] | None = None,
     ) -> tuple[Any, list[Exception]]:
         """Override to enrich Python models with docstrings"""
-        for manifest in [self.manifest, self._find_parent_manifest()]:  # type: ignore
+        for manifest in [self.manifest, self._find_parent_manifest()]:
             if manifest:
-                self.inject_docstring(manifest)  # type: ignore
+                self.inject_docstring(manifest)
 
         return self._db_adapter.get_filtered_catalog(  # type: ignore
             relation_configs, used_schemas, relations

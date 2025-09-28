@@ -2,7 +2,7 @@
 
 from typing import Generic, Literal, Optional, Protocol, TypeVar, Union
 
-import geopandas as gpd  # type: ignore
+import geopandas as gpd
 import pandas as pd
 import polars as pl
 
