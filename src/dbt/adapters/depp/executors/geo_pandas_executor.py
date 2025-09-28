@@ -1,6 +1,5 @@
 import io
 import re
-import time
 
 import connectorx as cx
 import geopandas as gpd
@@ -26,10 +25,9 @@ class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
         )
 
     def prepare_bulk_write(self, df: gpd.GeoDataFrame, table: str, schema: str) -> str:
-        start = time.perf_counter()
-
         engine = create_engine(self.conn_string)
         dtype_mapping = {}
+
         for col, dtype in df.dtypes.items():
             if dtype == "geometry":
                 dtype_mapping[col] = Geometry("GEOMETRY", srid=4326)
@@ -40,24 +38,17 @@ class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
             schema=schema,
             if_exists="replace",
             index=False,
-            dtype=dtype_mapping,
+            dtype=dtype_mapping,  # type: ignore
         )
 
-        # Convert geometry columns to WKT format
         df_copy = df.copy()
-        for col in df_copy.columns:
-            if df_copy[col].dtype == "geometry":
-                df_copy[col] = df_copy[col].apply(
-                    lambda geom: geom.wkt if geom else "\\N"
-                )
+        geom_cols = df_copy.select_dtypes(include="geometry").columns  # type: ignore
+        for col in geom_cols:  # type: ignore
+            df_copy[col] = df_copy[col].to_wkb_hex().fillna("\\N")  # type: ignore
 
         output = io.StringIO()
         np_array = df_copy.to_numpy()
         np.savetxt(output, np_array, delimiter="\t", fmt="%s", newline="\n")
-
-        end = time.perf_counter()
-        print(f"Numpy write took {end - start} seconds")
-
         return output.getvalue()
 
     def _get_geometry_columns(
