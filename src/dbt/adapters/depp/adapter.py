@@ -10,7 +10,7 @@ from dbt.adapters.base.meta import AdapterMeta, available
 from dbt.adapters.base.relation import BaseRelation
 from dbt.adapters.contracts.connection import AdapterResponse, Credentials
 from dbt.adapters.contracts.relation import RelationConfig
-from dbt.adapters.factory import FACTORY, get_adapter_by_type
+from dbt.adapters.factory import FACTORY, get_adapter_by_type  # type: ignore
 from dbt.adapters.protocol import AdapterConfig
 from dbt.artifacts.resources.types import ModelLanguage
 from dbt.clients.jinja import MacroGenerator
@@ -153,9 +153,9 @@ class DeppAdapter(metaclass=AdapterMeta):
         relations: set[BaseRelation] | None = None,
     ) -> tuple[Any, list[Exception]]:
         """Override to enrich Python models with docstrings"""
-        for manifest in [self.manifest, self._find_parent_manifest()]:
+        for manifest in [self.manifest, self._find_parent_manifest()]:  # type: ignore
             if manifest:
-                self.inject_docstring(manifest)
+                self.inject_docstring(manifest)  # type: ignore
 
         return self._db_adapter.get_filtered_catalog(  # type: ignore
             relation_configs, used_schemas, relations

@@ -64,7 +64,7 @@ class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
             FROM geometry_columns 
             WHERE f_table_schema = '{schema}' AND f_table_name = '{table}'
         """
-        geom_df = cx.read_sql(self.conn_string, query)
+        geom_df = cx.read_sql(self.conn_string, query)  # type: ignore
         srid = int(geom_df["srid"].iloc[0])
         return dict(zip(geom_df["col_name"], geom_df["geom_type"])), srid
 
@@ -78,7 +78,7 @@ class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
                    OR table_name = '{source.full_name}')
             ORDER BY ordinal_position
         """
-        return cx.read_sql(self.conn_string, cols_query)["column_name"].tolist()
+        return cx.read_sql(self.conn_string, cols_query)["column_name"].tolist()  # type: ignore
 
     def read_df(self, table_name: str) -> gpd.GeoDataFrame:
         """Read PostGIS table."""
@@ -91,7 +91,7 @@ class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
             f"ST_AsBinary({c}) as {c}_wkb" for c in geom_cols
         ]
         query = f"SELECT {', '.join(select_parts)} FROM {table_name}"
-        df = cx.read_sql(self.conn_string, query, protocol="binary")
+        df = cx.read_sql(self.conn_string, query, protocol="binary")  # type: ignore
         wkb_cols = [f"{col}_wkb" for col in geom_cols]
         for col in geom_cols:
             df[col] = gpd.GeoSeries.from_wkb(df[f"{col}_wkb"])
