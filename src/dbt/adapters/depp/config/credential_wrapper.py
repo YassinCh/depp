@@ -14,6 +14,7 @@ class DeppCredentialsWrapper:
 
     @property
     def type(self):
+        # TODO: duplicate logic also present in adapter_type.py
         if find_funcs_in_stack({"to_target_dict", "db_materialization"}):
             return self.db_creds.type
         return ADAPTER_NAME

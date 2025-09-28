@@ -28,6 +28,9 @@ dependencies = [
     "asyncpg>=0.30.0,<0.31.0",
     "adbc-driver-postgresql>=1.8.0",
     "sqlalchemy>=2.0.43",
+    "geoalchemy2>=0.18.0",
+    "snakeviz>=2.2.2",
+    "geopandas>=1.1.1",
 ]
 
 [project.optional-dependencies]
@@ -58,8 +61,3 @@ members = [
 
 [tool.uv.sources]
 depp = { workspace = true }
-
-[dependency-groups]
-dev = [
-    "depp",
-]

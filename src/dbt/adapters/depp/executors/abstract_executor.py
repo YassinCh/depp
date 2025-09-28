@@ -1,6 +1,7 @@
 import asyncio
 import io
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
 
 import asyncpg  # type: ignore
@@ -12,6 +13,13 @@ from dbt.adapters.postgres.connections import PostgresCredentials
 from .result import ExecutionResult
 
 DataFrameType = TypeVar("DataFrameType")
+
+
+@dataclass
+class SourceInfo:
+    full_name: str
+    schema: str
+    table: str
 
 
 class AbstractPythonExecutor(ABC, Generic[DataFrameType]):
@@ -40,11 +48,17 @@ class AbstractPythonExecutor(ABC, Generic[DataFrameType]):
         self.library = lib
         self.conn_string = self.get_connection_string(db)
 
+    @staticmethod
+    def get_source_info(table_name: str) -> SourceInfo:
+        clean_name = table_name.replace('"', "")
+        _, schema, table = clean_name.split(".")
+        return SourceInfo(f"{schema}.{table}", schema, table)
+
     def read_df(self, table_name: str) -> DataFrameType:
         # TODO: Support filtering
         """Reads all data from the table using connectorx"""
-        _, schema, table = table_name.replace('"', "").split(".")
-        query = f'SELECT * FROM "{schema}"."{table}"'
+        source = self.get_source_info(table_name)
+        query = f'SELECT * FROM "{source.schema}"."{source.table}"'
 
         # type ignores are needed as connectorx is untyped
         return cx.read_sql(  # type: ignore
@@ -81,7 +95,6 @@ class AbstractPythonExecutor(ABC, Generic[DataFrameType]):
         parts = table_name.replace('"', "").split(".")
         schema, table = parts[-2], parts[-1]
 
-        # asyncpg is not fully typed so type ignores are needed
         conn: Connection = await asyncpg.connect(dsn=self.conn_string)  # type: ignore
 
         csv_buffer = io.BytesIO()

@@ -2,14 +2,17 @@
 
 from typing import Any, Literal, Optional, Protocol, TypeVar, Union
 
+import geopandas as gpd
 import pandas as pd
 import polars as pl
 
 PandasDataFrame = pd.DataFrame
 PolarsDataFrame = Union[pl.DataFrame, pl.LazyFrame]
-DataFrame = Union[pd.DataFrame, pl.DataFrame, pl.LazyFrame]
+DataFrame = Union[pd.DataFrame, pl.DataFrame, pl.LazyFrame, gpd.GeoDataFrame]
 
-DataFrameT = TypeVar("DataFrameT", pd.DataFrame, pl.DataFrame, pl.LazyFrame)
+DataFrameT = TypeVar(
+    "DataFrameT", pd.DataFrame, pl.DataFrame, pl.LazyFrame, gpd.GeoDataFrame
+)
 
 
 class DbtThis:
@@ -126,6 +129,30 @@ class PandasDbt(DbtObject, Protocol):
         ...
 
 
+class GeoPandasDbt(DbtObject, Protocol):
+    """DbtObject specifically for pandas models.
+
+    When you use this type hint, the library is automatically configured to "pandas":
+    def model(dbt: PandasDbtObject, session: SessionObject) -> pd.DataFrame:
+        # No need to call dbt.config(library="pandas") - it's automatic!
+        customers = dbt.ref("customers")  # IDE knows this is pd.DataFrame
+    """
+
+    def ref(
+        self,
+        model_name: str,
+        *additional_names: str,
+        version: Optional[Union[str, int]] = None,
+        v: Optional[Union[str, int]] = None,
+    ) -> gpd.GeoDataFrame:
+        """Reference returns pd.DataFrame when using pandas."""
+        ...
+
+    def source(self, source_name: str, table_name: str) -> gpd.GeoDataFrame:
+        """Source returns pd.DataFrame when using pandas."""
+        ...
+
+
 class PolarsDbt(DbtObject, Protocol):
     """
     A DbtObject specifically for polars models.
@@ -192,5 +219,6 @@ __all__ = [
     "DbtObject",
     "PandasDbt",
     "PolarsDbt",
+    "GeoPandasDbt",
     "SessionObject",
 ]

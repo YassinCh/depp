@@ -10,6 +10,7 @@ from ..utils import find_profile, find_target
 
 def load_profile_info() -> tuple[Profile, dict[str, Any]]:
     """Load database profile from depp adapter configuration"""
+    # TODO: some of this code feels like it could use an upgrade also returning tuple isn't ideal
     flags: Namespace = get_flags()  # type: ignore
     renderer = ProfileRenderer(getattr(flags, "VARS", {}))
 

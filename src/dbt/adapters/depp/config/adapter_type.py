@@ -10,6 +10,7 @@ ADAPTER_NAME = "depp"
 
 
 class AdapterTypeDescriptor:
+    # TODO: can we use this in a more general way for all type things like connections?
     type_str: str = ADAPTER_NAME
 
     def __get__(

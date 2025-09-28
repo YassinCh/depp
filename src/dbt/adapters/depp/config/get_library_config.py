@@ -1,10 +1,16 @@
 import ast
 from typing import Optional
 
-LIBRARY_MAP = {"PandasDbtObject": "pandas", "PolarsDbtObject": "polars"}
+LIBRARY_MAP = {
+    "PandasDbt": "pandas",
+    "PolarsDbt": "polars",
+    "GeoPandasDbt": "geopandas",
+}
 
 
 def get_library_from_model(compiled_code: str) -> Optional[str]:
+    # TODO: find out a way to both simplify this and think about this mapping
+    # TODO: Auto crete this mapping?
     """Extract the library name from the model function's type annotation."""
     for node in ast.walk(ast.parse(compiled_code)):
         if (
@@ -20,4 +26,5 @@ def get_library_from_model(compiled_code: str) -> Optional[str]:
                     else ast.unparse(ann)
                 ).split(".")[-1]
             )
+
     return None
