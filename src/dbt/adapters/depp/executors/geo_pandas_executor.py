@@ -33,7 +33,7 @@ class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
             for col, dtype in df.dtypes.items()
             if dtype == "geometry"
         }
-        df.head(1).to_postgis(
+        df.head(0).to_postgis(
             name=table,
             con=engine,
             schema=schema,
@@ -51,10 +51,7 @@ class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
         for col in geom_cols:
             df_copy[col] = df_copy[col].to_wkt().fillna("\\N")
 
-        output = io.StringIO()
-        np_array = df_copy.to_numpy()
-        np.savetxt(output, np_array, delimiter="\t", fmt="%s", newline="\n")
-        return output.getvalue()
+        return df.to_csv(sep="\t", na_rep="\\N", index=False, header=False)
 
     def _get_geometry_columns(
         self, schema: str, table: str
