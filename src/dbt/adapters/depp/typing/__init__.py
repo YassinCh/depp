@@ -1,7 +1,14 @@
 import geopandas as gpd
 import pandas as pd
 
-from .base import DbtConfig, DbtThis, SessionObject
+from .base import (
+    DbtConfig,
+    DbtThis,
+    IndexConfig,
+    PostgresIndexType,
+    PrimaryKeyConstraint,
+    SessionObject,
+)
 from .dbt_objects import DbtObject, PolarsDataFrame
 
 PandasDbt = DbtObject[pd.DataFrame]
@@ -23,4 +30,7 @@ __all__ = [
     "PolarsDbt",
     "GeoPandasDbt",
     "SessionObject",
+    "IndexConfig",
+    "PostgresIndexType",
+    "PrimaryKeyConstraint",
 ]

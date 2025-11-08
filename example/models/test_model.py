@@ -9,8 +9,6 @@ if TYPE_CHECKING:
 
 
 def model(dbt: "GeoPandasDbt", session: "SessionObject") -> gpd.GeoDataFrame:
-    dbt.config(constraints=[{"columns": ["id"], "type": "primary_key"}])
-
-    df = dbt.source("raw_data", "result_table")
+    df = dbt.ref("typed_with_narrowing")
     df["test_column"] = [[1, 2, 3]] * len(df)
     return df

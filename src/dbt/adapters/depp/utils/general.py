@@ -32,7 +32,7 @@ def logs(func: funcT[T, P]) -> funcT[T, P]:
         response = func(self, *args, **kwargs)
         elapsed = round((time.time() - start_time), 2)
 
-        fire_event(CodeExecutionStatus(status=response.__str__(), elapsed=elapsed))
+        fire_event(CodeExecutionStatus(status=response.__str__(), elapsed=elapsed))  # type: ignore
         return response
 
     return logs  # type: ignore[return-value]

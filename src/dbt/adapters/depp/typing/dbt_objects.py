@@ -1,12 +1,12 @@
 """Type hints for dbt Python models to improve developer experience."""
 
-from typing import Generic, Literal, Optional, Protocol, TypeVar, Union
+from typing import Any, Generic, Literal, Optional, Protocol, TypeVar, Union
 
 import geopandas as gpd
 import pandas as pd
 import polars as pl
 
-from .base import DbtConfig, DbtThis
+from .base import DbtConfig, DbtThis, IndexConfig, PrimaryKeyConstraint
 
 PolarsDataFrame = Union[pl.DataFrame, pl.LazyFrame]
 DataFrame = Union[pd.DataFrame, PolarsDataFrame, gpd.GeoDataFrame]
@@ -52,9 +52,37 @@ class DbtObject(Protocol, Generic[DataFrameT]):
         ...
 
     def config(
-        self, library: Literal["polars"] | Literal["pandas"] | Literal["geopandas"]
+        self,
+        library: Literal["polars", "pandas", "geopandas"] | None = None,
+        *,
+        indexes: list[IndexConfig] | None = None,
+        constraints: list[PrimaryKeyConstraint] | None = None,
+        **kwargs: Any,
     ) -> DbtConfig:
-        """Access model configuration."""
+        """Configure the model.
+
+        Args:
+            library: DataFrame library to use
+            indexes: List of index configurations
+            constraints: List of constraint configurations (e.g., primary keys)
+            **kwargs: Additional dbt configuration options
+
+        Examples:
+            >>> # With indexes
+            >>> dbt.config(
+            ...     indexes=[
+            ...         {"columns": ["id"], "unique": True},
+            ...         {"columns": ["geom"], "type": "gist"},
+            ...     ]
+            ... )
+            >>>
+            >>> # With primary key
+            >>> dbt.config(
+            ...     constraints=[
+            ...         {"type": "primary_key", "columns": ["id"]}
+            ...     ]
+            ... )
+        """
         ...
 
     @property

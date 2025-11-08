@@ -6,9 +6,16 @@ class ExecutionResult:
     """Result from executing a dbt Python model."""
 
     rows_affected: int
-    table_name: str
     schema: str
     table: str
+    read_time: float = 0.0
+    transform_time: float = 0.0
+    write_time: float = 0.0
 
     def __str__(self) -> str:
-        return f"SELECT {self.rows_affected:,}"
+        timing = (
+            f" E:{self.read_time:.1f}s T:{self.transform_time:.1f}s L:{self.write_time:.1f}s"
+            if self.read_time > 0 or self.write_time > 0
+            else ""
+        )
+        return f"SELECT {self.rows_affected:,}{timing}"

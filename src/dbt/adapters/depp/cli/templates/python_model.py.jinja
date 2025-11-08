@@ -1,0 +1,35 @@
+{% if library == "polars" -%}
+import polars as pl
+{%- elif library == "pandas" -%}
+import pandas as pd
+{%- elif library == "geopandas" -%}
+import geopandas as gpd
+{%- endif %}
+
+
+{% if library == "polars" -%}
+from dbt.adapters.depp.typing import PolarsDbt, SessionObject
+{%- elif library == "pandas" -%}
+from dbt.adapters.depp.typing import PandasDbt, SessionObject
+{%- elif library == "geopandas" -%}
+from dbt.adapters.depp.typing import GeoPandasDbt, SessionObject
+{%- endif %}
+
+
+
+def model({% if library == "polars" -%}dbt: "PolarsDbt",{%- elif library == "pandas" -%}dbt: "PandasDbt",{%- elif library == "geopandas" -%}dbt: "GeoPandasDbt",{%- endif %} session: "SessionObject") -> {% if library == "polars" %}pl.DataFrame{% elif library == "pandas" %}pd.DataFrame{% elif library == "geopandas" %}gpd.GeoDataFrame{% endif %}:
+    """{{ description }}"""
+    # TODO: Implement your model logic here
+    # Example: df = dbt.ref("upstream_model")
+    # Example: df = dbt.source("source_name", "table_name")
+
+    {% if library == "polars" -%}
+    # Return a Polars DataFrame
+    return pl.DataFrame()
+    {%- elif library == "pandas" -%}
+    # Return a Pandas DataFrame
+    return pd.DataFrame()
+    {%- elif library == "geopandas" -%}
+            # Return a GeoPandas GeoDataFrame
+    return gpd.GeoDataFrame()
+    {%- endif %}

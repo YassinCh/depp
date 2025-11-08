@@ -1,0 +1,10 @@
+"""Example DEPP model."""
+
+import polars as pl
+
+from src.dbt.adapters.depp.typing import PolarsDbt, SessionObject
+
+
+def model(dbt: "PolarsDbt", session: "SessionObject") -> pl.DataFrame:
+    """Example model that returns an empty DataFrame."""
+    return pl.DataFrame({"id": [1, 2, 3], "value": ["a", "b", "c"]})

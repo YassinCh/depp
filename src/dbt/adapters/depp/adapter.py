@@ -10,7 +10,7 @@ from dbt.adapters.base.meta import AdapterMeta, available
 from dbt.adapters.base.relation import BaseRelation
 from dbt.adapters.contracts.connection import AdapterResponse, Credentials
 from dbt.adapters.contracts.relation import RelationConfig
-from dbt.adapters.factory import FACTORY, get_adapter_by_type  # type: ignore
+from dbt.adapters.factory import FACTORY, get_adapter_by_type
 from dbt.adapters.protocol import AdapterConfig
 from dbt.artifacts.resources.types import ModelLanguage
 from dbt.clients.jinja import MacroGenerator
@@ -86,6 +86,7 @@ class DeppAdapter(metaclass=AdapterMeta):
         config = ModelConfig.from_model(parsed_model, compiled_code)
         executor = self.get_executor(parsed_model, config.library)
         result = executor.submit(compiled_code)
+        print(result)
         return AdapterResponse(_message=f"PYTHON | {result}")
 
     def get_executor(
@@ -153,9 +154,9 @@ class DeppAdapter(metaclass=AdapterMeta):
         relations: set[BaseRelation] | None = None,
     ) -> tuple[Any, list[Exception]]:
         """Override to enrich Python models with docstrings"""
-        for manifest in [self.manifest, self._find_parent_manifest()]:  # type: ignore
+        for manifest in [self.manifest, self._find_parent_manifest()]:
             if manifest:
-                self.inject_docstring(manifest)  # type: ignore
+                self.inject_docstring(manifest)
 
         return self._db_adapter.get_filtered_catalog(  # type: ignore
             relation_configs, used_schemas, relations

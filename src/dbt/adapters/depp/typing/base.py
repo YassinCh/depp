@@ -1,4 +1,4 @@
-from typing import Any, Protocol
+from typing import Any, Literal, NotRequired, Protocol, TypedDict
 
 
 class DbtThis:
@@ -45,6 +45,25 @@ class SessionObject(Protocol):
         ...
 
 
+PostgresIndexType = Literal["btree", "hash", "gist", "spgist", "gin", "brin"]
+
+
+class PrimaryKeyConstraint(TypedDict, total=False):
+    """Primary key constraint configuration."""
+
+    type: Literal["primary_key"]
+    columns: list[str]
+    name: NotRequired[str]
+
+
+class IndexConfig(TypedDict, total=False):
+    """Configuration for a database index."""
+
+    columns: list[str]
+    unique: NotRequired[bool]
+    type: NotRequired[PostgresIndexType]
+
+
 class DbtConfig:
     """Configuration object for dbt models."""
 
@@ -61,7 +80,9 @@ class DbtConfig:
         """Set configuration options.
 
         Args:
-            library: DataFrame library to use ("pandas" or "polars")
-            **kwargs: Additional configuration options
+            library: DataFrame library to use ("polars", "pandas", or "geopandas")
+            indexes: List of index configurations to create on the table
+            constraints: List of constraint configurations (e.g., primary keys)
+            **kwargs: Additional dbt configuration options (materialized, schema, etc.)
         """
         ...

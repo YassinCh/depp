@@ -1,0 +1,47 @@
+import marimo
+
+__generated_with = "0.17.7"
+app = marimo.App()
+
+
+@app.cell
+def _():
+    import marimo as mo
+    from pathlib import Path
+    {% if library == "polars" -%}
+    import polars as pl
+    return mo, Path, pl
+    {%- elif library == "pandas" -%}
+    import pandas as pd
+    return mo, Path, pd
+    {%- elif library == "geopandas" -%}
+    import geopandas as gpd
+    return mo, Path, gpd
+    {%- endif %}
+
+
+@app.cell
+def _(Path):
+    # Load dependencies
+    _data_dir = Path(__file__).parent / "data"
+    {% for dep_name in dep_names -%}
+    {% if library == "polars" -%}
+    {{ dep_name }} = pl.read_parquet(_data_dir / "{{ dep_name }}.parquet")
+    {%- elif library == "pandas" -%}
+    {{ dep_name }} = pd.read_parquet(_data_dir / "{{ dep_name }}.parquet")
+    {%- elif library == "geopandas" -%}
+    {{ dep_name }} = gpd.read_parquet(_data_dir / "{{ dep_name }}.parquet")
+    {%- endif %}
+    {% endfor -%}
+    return {{ dep_names|join(", ") }}
+
+
+@app.cell
+def _(mo, {{ dep_names|join(", ") }}):
+    # Experiment here
+    mo.ui.dataframe({{ dep_names[0] if dep_names else "None" }})
+    return
+
+
+if __name__ == "__main__":
+    app.run()

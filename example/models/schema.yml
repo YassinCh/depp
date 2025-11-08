@@ -17,37 +17,6 @@ sources:
           - name: van_e_station_id
           - name: naar_e_station_id
           - name: ligging
-          
-  - name: benchmark_data
-    description: "Source tables for benchmarking"
-    database: example_db
-    schema: test
-    tables:
-      - name: sales_base_data
-        description: "1M sales records for benchmark testing"
-        columns:
-          - name: sale_id
-            description: "Unique sale identifier"
-          - name: product_name
-            description: "Product name"
-          - name: price
-            description: "Product price"
-          - name: quantity
-            description: "Quantity sold"
-          - name: category
-            description: "Product category"
-          - name: region
-            description: "Sales region"
-          - name: sale_date
-            description: "Date of sale"
-          - name: customer_id
-            description: "Customer identifier"
-          - name: sales_rep_id
-            description: "Sales representative identifier"
-          - name: discount_percent
-            description: "Discount percentage applied"
-          - name: created_at
-            description: "Record creation timestamp"
 
 
 

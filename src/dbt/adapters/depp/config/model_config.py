@@ -14,11 +14,10 @@ class ModelConfig:
     @classmethod
     def from_model(
         cls,
-        parsed_model: dict[str, Any],
+        parsed_model: dict[str, dict[str, Any]],
         compiled_code: str,
         default_library: str = "polars",
     ) -> "ModelConfig":
-        # Resolves library from config
         library = (
             parsed_model.get("config", {}).get("library")
             or get_library_from_typehint(

@@ -4,14 +4,15 @@
 
 {%- if language == 'python' -%}
 
-
   {%- set relation = this.incorporate(type='table') -%}
 
   {%- call statement('main', language=language) -%}
-
     {{- py_write(compiled_code, relation) }}
-
   {%- endcall %}
+
+  {% do create_indexes(relation) %}
+  {% do create_constraints(relation) %}
+  {% do run_query("COMMIT;") %}
 
 {{- return({'relations': [relation]}) }}
 
@@ -36,4 +37,21 @@ def main(read_df, write_df, fal_context=None):
       '{{ relation.quote(False, False, False) }}',
       df
   )
+{%- endmacro %}
+
+{% macro create_constraints(relation) -%}
+  {%- set constraints = config.get('constraints', default=[]) -%}
+
+  {% for constraint in constraints %}
+    {% if constraint.type == 'primary_key' %}
+      {% set columns = constraint.columns | join(', ') %}
+      {% set constraint_name = constraint.get('name', relation.identifier ~ '_pkey') %}
+      {% set sql %}
+        ALTER TABLE {{ relation }}
+        ADD CONSTRAINT "{{ constraint_name }}"
+        PRIMARY KEY ({{ columns }})
+      {% endset %}
+      {% do run_query(sql) %}
+    {% endif %}
+  {% endfor %}
 {%- endmacro %}
