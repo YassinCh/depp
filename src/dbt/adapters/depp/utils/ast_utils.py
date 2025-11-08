@@ -11,7 +11,7 @@ def get_library_from_typehint(
 ) -> str | None:
     """Extract the library name from the model function's type annotation."""
     # TODO: find out a way to both simplify this and think about this mapping
-    # TODO: Auto crete this mapping?
+    # TODO: Auto create this mapping?
     for node in ast.walk(ast.parse(code)):
         if (
             isinstance(node, ast.FunctionDef)

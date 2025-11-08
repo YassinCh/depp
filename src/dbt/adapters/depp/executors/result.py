@@ -6,7 +6,6 @@ class ExecutionResult:
     """Result from executing a dbt Python model."""
 
     rows_affected: int
-    table_name: str
     schema: str
     table: str
 

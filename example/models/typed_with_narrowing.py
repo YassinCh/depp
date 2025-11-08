@@ -2,10 +2,15 @@
 
 from typing import TYPE_CHECKING
 
+import geopandas as gpd
+
 if TYPE_CHECKING:
-    from ...src.dbt.adapters.depp.typing import GeoPandasDbt, SessionObject
+    from src.dbt.adapters.depp.typing import GeoPandasDbt, SessionObject
 
 
-def model(dbt: "GeoPandasDbt", session: "SessionObject"):
-    products_df = dbt.source("raw_data", "result_table")
-    return products_df
+def model(dbt: "GeoPandasDbt", session: "SessionObject") -> gpd.GeoDataFrame:
+    dbt.config(constraints=[{"columns": ["id"], "type": "primary_key"}])
+
+    df = dbt.source("raw_data", "result_table")
+    df["test_column"] = [[1, 2, 3]] * len(df)
+    return df

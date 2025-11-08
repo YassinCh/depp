@@ -34,6 +34,8 @@ dependencies = [
     "cyclopts>=3.24.0",
     "mypy>=1.18.2",
     "types-geopandas>=1.1.1.20250829",
+    "momepy>=0.10.0",
+    "asyncpg-stubs>=0.30.2",
 ]
 
 [project.optional-dependencies]
@@ -64,6 +66,9 @@ packages = ["src/dbt"]
 members = [
     ".",
 ]
+
+[tool.mypy]
+strict = true
 
 [tool.uv.sources]
 depp = { workspace = true }
