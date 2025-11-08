@@ -1,3 +1,4 @@
+import contextlib
 import time
 from typing import Any
 
@@ -65,7 +66,9 @@ class GeoPandasLocalExecutor(AbstractPythonExecutor[gpd.GeoDataFrame]):
             WHERE f_table_schema = '{schema}' AND f_table_name = '{table}'
         """
         geom_df = cx.read_sql(self.conn_string, query)
-        srid = int(geom_df["srid"].iloc[0])
+        srid = 28992
+        with contextlib.suppress(Exception):
+            srid = int(geom_df["srid"].iloc[0])
         self.srid = srid if srid != 0 else 28992
         return dict(zip(geom_df["col_name"], geom_df["geom_type"]))
 
