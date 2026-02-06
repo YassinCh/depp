@@ -5,9 +5,10 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 
 import connectorx as cx
 from dbt.adapters.contracts.connection import Credentials
-from dbt.adapters.postgres.connections import PostgresCredentials
 
 from .result import ExecutionResult
+
+SUPPORTED_BACKENDS = {"postgres", "snowflake"}
 
 if TYPE_CHECKING:
     from .geo_pandas_executor import GeoPandasLocalExecutor
@@ -43,20 +44,25 @@ class AbstractPythonExecutor[DataFrameType](ABC):
                 AbstractPythonExecutor.type_mapping[type_hint] = cls.library_name
 
     def __init__(self, parsed: dict[str, Any], db: Credentials, lib: str = "polars"):
-        if not isinstance(db, PostgresCredentials):
-            raise ValueError("Currently just postgres is supported")
+        if db.type not in SUPPORTED_BACKENDS:
+            raise ValueError(
+                f"Unsupported backend '{db.type}'. Supported: {', '.join(SUPPORTED_BACKENDS)}"
+            )
         if lib not in self.registry:
             raise ValueError(f"Only {', '.join(self.registry)} supported")
 
         self.parsed_model = parsed
         self.library = lib
-        self.conn_string = self.get_connection_string(db)
+        self.db_type = db.type
+        self.creds = db
+        self.conn_string = self.build_connection_string(db)
         self._read_time = 0.0
         self._write_time = 0.0
 
     def read_df(self, table_name: str) -> DataFrameType:
-        # TODO: Support filtering
-        """Reads all data from the table using connectorx"""
+        """Reads all data from the table. Uses connectorx for Postgres.
+        Subclasses override for Snowflake (connectorx doesn't support it).
+        """
         start = time.perf_counter()
         source = self.get_source_info(table_name)
         query = f'SELECT * FROM "{source.schema}"."{source.table}"'
@@ -79,7 +85,7 @@ class AbstractPythonExecutor[DataFrameType](ABC):
     def write_dataframe(
         self, df: DataFrameType, table: str, schema: str
     ) -> ExecutionResult:
-        """Write DataFrame to PostgreSQL."""
+        """Write DataFrame to the target database."""
         raise NotImplementedError
 
     def submit(self, compiled_code: str) -> ExecutionResult:
@@ -109,10 +115,32 @@ class AbstractPythonExecutor[DataFrameType](ABC):
         return SourceInfo(f"{schema}.{table}", schema, table)
 
     @staticmethod
-    def get_connection_string(db_creds: PostgresCredentials) -> str:
-        # TODO: support more database types
-        """Build PostgreSQL connection string from credentials."""
-        return f"postgresql://{db_creds.user}:{db_creds.password}@{db_creds.host}:{db_creds.port}/{db_creds.database}"
+    def build_connection_string(creds: Credentials) -> str:
+        """Build connection string for the given database credentials."""
+        user = getattr(creds, "user", "")
+        password = getattr(creds, "password", "")
+
+        if creds.type == "postgres":
+            host = getattr(creds, "host", "localhost")
+            port = getattr(creds, "port", 5432)
+            return f"postgresql://{user}:{password}@{host}:{port}/{creds.database}"
+
+        if creds.type == "snowflake":
+            account = getattr(creds, "account", "")
+            warehouse = getattr(creds, "warehouse", "")
+            role = getattr(creds, "role", "")
+            base = f"snowflake://{user}:{password}@{account}/{creds.database}/{creds.schema}"
+            params = "&".join(
+                f"{k}={v}"
+                for k, v in [("warehouse", warehouse), ("role", role)]
+                if v
+            )
+            return f"{base}?{params}" if params else base
+
+        raise ValueError(f"Unsupported backend: {creds.type}")
+
+    # Keep old name for compatibility
+    get_connection_string = build_connection_string
 
     @classmethod
     def get_library_for_type(cls, type_hint: str) -> str | None:

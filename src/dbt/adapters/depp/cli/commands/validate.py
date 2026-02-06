@@ -4,12 +4,12 @@ from pathlib import Path
 from typing import Annotated
 
 from cyclopts import Parameter
-from dbt.adapters.postgres.connections import PostgresCredentials
 from dbt.cli.main import dbtRunner
 from rich.console import Console
 from rich.table import Table
 
 from ...config import DbInfo
+from ...executors.abstract_executor import SUPPORTED_BACKENDS
 from ...utils.validation import (
     ValidationResult,
     validate_db_connection,
@@ -41,15 +41,16 @@ def validate(
             results.append(
                 ValidationResult(conn_type, False, "Failed to parse dbt project")
             )
-        elif not isinstance(
-            db_creds := DbInfo.load_profile_info().profile.credentials,
-            PostgresCredentials,
-        ):
-            results.append(
-                ValidationResult(conn_type, False, "Only PostgreSQL supported")
-            )
         else:
-            results.append(validate_db_connection(db_creds))
+            db_creds = DbInfo.load_profile_info().profile.credentials
+            if db_creds.type not in SUPPORTED_BACKENDS:
+                results.append(
+                    ValidationResult(
+                        conn_type, False, f"Unsupported backend: {db_creds.type}"
+                    )
+                )
+            else:
+                results.append(validate_db_connection(db_creds))
 
     if model:
         model_path = (

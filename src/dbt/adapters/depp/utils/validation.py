@@ -5,8 +5,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-import psycopg2  # type: ignore
-from dbt.adapters.postgres.connections import PostgresCredentials
+from dbt.adapters.contracts.connection import Credentials
 
 
 @dataclass
@@ -59,18 +58,52 @@ def validate_mypy(file_path: Path) -> ValidationResult:
         return ValidationResult("Mypy", False, str(e))
 
 
-def validate_db_connection(creds: PostgresCredentials) -> ValidationResult:
-    """Test database connection."""
+def validate_db_connection(creds: Credentials) -> ValidationResult:
+    """Test database connection for any supported backend."""
+    if creds.type == "postgres":
+        return _validate_postgres_connection(creds)
+    if creds.type == "snowflake":
+        return _validate_snowflake_connection(creds)
+    return ValidationResult("DB Connection", False, f"Unsupported backend: {creds.type}")
+
+
+def _validate_postgres_connection(creds: Credentials) -> ValidationResult:
     try:
+        import psycopg2  # type: ignore[import-untyped]
+
         conn = psycopg2.connect(
-            host=creds.host,
-            port=creds.port,
-            user=creds.user,
-            password=creds.password,
+            host=getattr(creds, "host", "localhost"),
+            port=getattr(creds, "port", 5432),
+            user=getattr(creds, "user", ""),
+            password=getattr(creds, "password", ""),
             database=creds.database,
             connect_timeout=5,
         )
         conn.close()
         return ValidationResult("DB Connection", True)
+    except Exception as e:
+        return ValidationResult("DB Connection", False, str(e))
+
+
+def _validate_snowflake_connection(creds: Credentials) -> ValidationResult:
+    try:
+        import snowflake.connector  # type: ignore[import-untyped]
+
+        conn = snowflake.connector.connect(
+            user=getattr(creds, "user", ""),
+            password=getattr(creds, "password", ""),
+            account=getattr(creds, "account", ""),
+            database=creds.database,
+            schema=creds.schema,
+            warehouse=getattr(creds, "warehouse", ""),
+            login_timeout=5,
+        )
+        conn.cursor().execute("SELECT 1")
+        conn.close()
+        return ValidationResult("DB Connection", True)
+    except ImportError:
+        return ValidationResult(
+            "DB Connection", False, "snowflake-connector-python not installed"
+        )
     except Exception as e:
         return ValidationResult("DB Connection", False, str(e))
