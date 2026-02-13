@@ -1,7 +1,5 @@
 """Version information for depp package."""
 
-from importlib.metadata import version
+from importlib.metadata import version as _get_version
 
-__version__ = ".".join(version("dbt-depp").split(".")[:3])
-# TODO: fix
-version = __version__  # type: ignore
+version = ".".join(_get_version("dbt-depp").split(".")[:3])

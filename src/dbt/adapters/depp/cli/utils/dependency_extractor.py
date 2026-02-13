@@ -4,10 +4,14 @@ from typing import TypedDict
 
 
 class DependsOn(TypedDict, total=False):
+    """Node dependency references."""
+
     nodes: list[str]
 
 
 class NodeDict(TypedDict, total=False):
+    """Dictionary shape of a dbt node."""
+
     depends_on: DependsOn
     name: str
     database: str
@@ -17,6 +21,8 @@ class NodeDict(TypedDict, total=False):
 
 
 class ManifestDict(TypedDict, total=False):
+    """Dictionary shape of a dbt manifest."""
+
     nodes: dict[str, NodeDict]
     sources: dict[str, NodeDict]
 

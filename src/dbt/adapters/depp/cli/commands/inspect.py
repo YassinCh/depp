@@ -1,16 +1,13 @@
 """Inspect Python model configuration and dependencies."""
 
-from typing import Annotated, cast
+from typing import Annotated
 
 from cyclopts import Parameter
-from dbt.cli.main import dbtRunner
-from dbt.contracts.graph.manifest import Manifest
 from rich.console import Console
 from rich.table import Table
 
-from ...config import ModelConfig
-from ..main import app
-from ..utils import get_dependencies
+from dbt.adapters.depp.cli.main import app
+from dbt.adapters.depp.cli.utils import get_dependencies, parse_model_config
 
 console = Console()
 
@@ -21,23 +18,10 @@ def inspect(
     profile: Annotated[str | None, Parameter(help="Profile to use")] = None,
 ) -> None:
     """Inspect model configuration, dependencies, and compiled code."""
-    res = dbtRunner().invoke(["parse"] + (["--profile", profile] if profile else []))
-
-    if not res.success or not res.result:
-        return console.print(f"[red]Failed to parse dbt: {res.exception}")
-
-    manifest = cast(Manifest, res.result)
-    if not (
-        node := next((n for n in manifest.nodes.values() if n.name == model), None)
-    ):
-        return console.print(f"[red]Model '{model}' not found")
-    if node.resource_type.value != "model":
-        return console.print(f"[red]'{model}' is not a model")
-
-    config = ModelConfig.from_model(
-        node.to_dict(),
-        getattr(node, "compiled_code", None) or getattr(node, "raw_code", ""),  # type: ignore[arg-type]
-    )
+    result = parse_model_config(model, console, profile)
+    if not result:
+        return
+    manifest, node, config = result
 
     config_table = Table(title=f"Model: {model}", show_header=False)
     config_table.add_column("Property", style="cyan")
@@ -53,7 +37,8 @@ def inspect(
     console.print(config_table)
 
     if not (deps := get_dependencies(node.to_dict(), manifest.to_dict())):  # type: ignore[arg-type]
-        return console.print("\n[dim]No dependencies found")
+        console.print("\n[dim]No dependencies found")
+        return
 
     dep_table = Table(title="Dependencies")
     dep_table.add_column("Name", style="green")

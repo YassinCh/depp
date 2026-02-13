@@ -9,15 +9,13 @@ if TYPE_CHECKING:
 
 
 def model(dbt: "PolarsDbt", session: "SessionObject") -> pl.DataFrame:
-    """
-    Example model showing how to configure indexes.
+    """Example model showing how to configure indexes.
 
     This model demonstrates three types of index configurations:
     1. Unique index on a single column
     2. Hash index on a single column
     3. Multi-column index (default btree)
     """
-
     # Configure constraints and indexes for this model
     dbt.config(
         constraints=[

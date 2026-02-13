@@ -5,8 +5,11 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-import psycopg2  # type: ignore
-from dbt.adapters.postgres.connections import PostgresCredentials
+from dbt.adapters.contracts.connection import Credentials
+from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
+
+from dbt.adapters.depp.db import get_db_ops
 
 
 @dataclass
@@ -18,59 +21,60 @@ class ValidationResult:
     message: str = ""
 
 
-def validate_python_syntax(file_path: Path) -> ValidationResult:
-    """Validate Python file syntax."""
+def validate_python_syntax(source: str) -> ValidationResult:
+    """Validate Python source syntax."""
     try:
-        ast.parse(file_path.read_text())
+        ast.parse(source)
         return ValidationResult("Syntax", True)
     except SyntaxError as e:
         return ValidationResult("Syntax", False, str(e))
 
 
-def validate_type_hints(file_path: Path) -> ValidationResult:
+def validate_type_hints(source: str) -> ValidationResult:
     """Check model function has type hints."""
     try:
-        tree = ast.parse(file_path.read_text())
+        tree = ast.parse(source)
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef) and node.name == "model":
                 if not node.returns or not all(a.annotation for a in node.args.args):
                     return ValidationResult("Type Hints", False, "Missing annotations")
                 return ValidationResult("Type Hints", True)
         return ValidationResult("Type Hints", False, "No model() function")
-    except Exception as e:
+    except (SyntaxError, OSError) as e:
         return ValidationResult("Type Hints", False, str(e))
 
 
-def validate_mypy(file_path: Path) -> ValidationResult:
-    """Run mypy strict on file."""
+def validate_model_file(file_path: Path) -> list[ValidationResult]:
+    """Read file once and run syntax + type hint checks."""
+    source = file_path.read_text()
+    return [validate_python_syntax(source), validate_type_hints(source)]
+
+
+def validate_ty(file_path: Path) -> ValidationResult:
+    """Run ty type checker on file."""
     try:
         result = subprocess.run(
-            ["mypy", "--strict", str(file_path)],
-            capture_output=True,
+            ["ty", "check", str(file_path)],
+            check=False, capture_output=True,
             text=True,
             timeout=30,
         )
         if result.returncode == 0:
-            return ValidationResult("Mypy", True)
-        return ValidationResult("Mypy", False, result.stdout.strip())
+            return ValidationResult("ty", True)
+        return ValidationResult("ty", False, result.stdout.strip())
     except FileNotFoundError:
-        return ValidationResult("Mypy", False, "mypy not found")
-    except Exception as e:
-        return ValidationResult("Mypy", False, str(e))
+        return ValidationResult("ty", False, "ty not found")
+    except OSError as e:
+        return ValidationResult("ty", False, str(e))
 
 
-def validate_db_connection(creds: PostgresCredentials) -> ValidationResult:
+def validate_db_connection(creds: Credentials) -> ValidationResult:
     """Test database connection."""
     try:
-        conn = psycopg2.connect(
-            host=creds.host,
-            port=creds.port,
-            user=creds.user,
-            password=creds.password,
-            database=creds.database,
-            connect_timeout=5,
-        )
-        conn.close()
+        db_ops = get_db_ops(creds)
+        engine = create_engine(db_ops.sqlalchemy_url(creds))
+        with engine.connect():
+            pass
         return ValidationResult("DB Connection", True)
-    except Exception as e:
+    except (SQLAlchemyError, OSError) as e:
         return ValidationResult("DB Connection", False, str(e))

@@ -13,8 +13,11 @@ class ExecutionResult:
     write_time: float = 0.0
 
     def __str__(self) -> str:
+        """Format the result as a summary string."""
         timing = (
-            f" E:{self.read_time:.1f}s T:{self.transform_time:.1f}s L:{self.write_time:.1f}s"
+            f" E:{self.read_time:.1f}s"
+            f" T:{self.transform_time:.1f}s"
+            f" L:{self.write_time:.1f}s"
             if self.read_time > 0 or self.write_time > 0
             else ""
         )

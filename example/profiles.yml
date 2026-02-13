@@ -1,12 +1,16 @@
+# DEPP example profiles
+
 test_project:
   target: dev_depp
   outputs:
+    # DEPP wrapper pointing to Postgres
     dev_depp:
       type: depp
       db_profile: dev_postgres
       database: test
       schema: public
-      
+
+    # Actual Postgres connection
     dev_postgres:
       type: postgres
       host: localhost
@@ -16,3 +20,22 @@ test_project:
       database: test
       schema: public
       threads: 1
+
+    # DEPP wrapper pointing to Snowflake
+    dev_snowflake_depp:
+      type: depp
+      db_profile: dev_snowflake
+      database: SNOWFLAKE_LEARNING_DB
+      schema: PUBLIC
+
+    # Actual Snowflake connection
+    dev_snowflake:
+      type: snowflake
+      account: JUYLHUS-GY59648
+      user: YASSIMBA
+      password: y8PkPSJwreZSVJ8
+      role: ACCOUNTADMIN
+      warehouse: COMPUTE_WH
+      database: SNOWFLAKE_LEARNING_DB
+      schema: PUBLIC
+      threads: 4

@@ -4,11 +4,11 @@ from pathlib import Path
 from typing import Annotated
 
 from cyclopts import Parameter
-from jinja2 import Environment, PackageLoader
 from rich.console import Console
 from rich.prompt import Prompt
 
-from ..main import app
+from dbt.adapters.depp.cli.main import app
+from dbt.adapters.depp.cli.utils import confirm_overwrite, render_template
 
 console = Console()
 
@@ -35,22 +35,11 @@ def init(
     profiles_path = Path.home() / ".dbt" / "profiles.yml"
     profiles_path.parent.mkdir(exist_ok=True)
 
-    if (
-        profiles_path.exists()
-        and Prompt.ask(
-            "\n[yellow]profiles.yml exists. Overwrite?[/yellow]",
-            choices=["y", "n"],
-            default="n",
-        )
-        != "y"
-    ):
-        return console.print("[red]Cancelled")
+    if not confirm_overwrite(profiles_path, console):
+        return
 
-    env = Environment(loader=PackageLoader("dbt.adapters.depp.cli", "templates"))
-    profiles_path.write_text(
-        env.get_template("profiles.yml.jinja").render(
-            profile_name=profile_name, **creds
-        )
+    render_template(
+        "profiles.yml.jinja", profiles_path, profile_name=profile_name, **creds
     )
     console.print(f"\n[green]✓ Created {profiles_path}")
 
@@ -58,9 +47,10 @@ def init(
     example_path.parent.mkdir(exist_ok=True)
 
     if not example_path.exists():
-        example_path.write_text(env.get_template("example_model.py.jinja").render())
+        render_template("example_model.py.jinja", example_path)
         console.print(f"[green]✓ Created {example_path}")
 
     console.print(
-        "\n[bold green]Setup complete![/bold green]\nNext steps:\n  1. dbt-depp validate\n  2. dbt run"
+        "\n[bold green]Setup complete![/bold green]\n"
+        "Next steps:\n  1. dbt-depp validate\n  2. dbt run"
     )

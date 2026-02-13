@@ -151,3 +151,4 @@ temp/
 integration_tests/mock/regular_output
 integration_tests/mock/fal_output/agent_wait_time_test
 CLAUDE.md
+.DS_Store

@@ -1,6 +1,6 @@
 """Type hints for dbt Python models to improve developer experience."""
 
-from typing import Any, Generic, Literal, Optional, Protocol, TypeVar, Union
+from typing import Any, Literal, Protocol
 
 import geopandas as gpd
 import pandas as pd
@@ -8,25 +8,21 @@ import polars as pl
 
 from .base import DbtConfig, DbtThis, IndexConfig, PrimaryKeyConstraint
 
-PolarsDataFrame = Union[pl.DataFrame, pl.LazyFrame]
-DataFrame = Union[pd.DataFrame, PolarsDataFrame, gpd.GeoDataFrame]
-
-DataFrameT = TypeVar("DataFrameT", bound=DataFrame, covariant=True)
+PolarsDataFrame = pl.DataFrame | pl.LazyFrame
+DataFrame = pd.DataFrame | PolarsDataFrame | gpd.GeoDataFrame
 
 
-class DbtObject(Protocol, Generic[DataFrameT]):
-    """
-    Dbt Object type providing method to reference other models and sources
-    """
+class DbtObject[DataFrameT_co: DataFrame](Protocol):
+    """Provide methods to reference other models and sources."""
 
     def ref(
         self,
         model_name: str,
         *additional_names: str,
-        version: Optional[Union[str, int]] = None,
-        v: Optional[Union[str, int]] = None,
-    ) -> DataFrameT:
-        """Reference another model in the dbt project.
+        version: str | int | None = None,
+        v: str | int | None = None,
+    ) -> DataFrameT_co:
+        """Return the referenced model as a DataFrame.
 
         Args:
             model_name: Name of the model to reference
@@ -35,12 +31,12 @@ class DbtObject(Protocol, Generic[DataFrameT]):
             v: Model version (short form)
 
         Returns:
-            A dataFrame containing the referenced model's data.
+            A DataFrame containing the referenced model's data.
         """
         ...
 
-    def source(self, source_name: str, table_name: str) -> DataFrameT:
-        """Reference a source table.
+    def source(self, source_name: str, table_name: str) -> DataFrameT_co:
+        """Return the source table as a DataFrame.
 
         Args:
             source_name: Name of the source

@@ -4,11 +4,11 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from cyclopts import Parameter
-from jinja2 import Environment, PackageLoader
 from rich.console import Console
 from rich.prompt import Prompt
 
-from ..main import app
+from dbt.adapters.depp.cli.main import app
+from dbt.adapters.depp.cli.utils import confirm_overwrite, render_template
 
 console = Console()
 
@@ -38,23 +38,12 @@ def new_model(
     model_name = name.removesuffix(".py")
     output_path = output_dir / f"{model_name}.py"
 
-    if output_path.exists():
-        overwrite = Prompt.ask(
-            f"[yellow]File {output_path} already exists. Overwrite?[/yellow]",
-            choices=["y", "n"],
-            default="n",
-        )
-        if overwrite.lower() != "y":
-            return console.print("[red]Cancelled")
+    if not confirm_overwrite(output_path, console):
+        return
 
-    env = Environment(
-        loader=PackageLoader("dbt.adapters.depp.cli", "templates"),
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
-    template = env.get_template("python_model.py.jinja")
-    rendered = template.render(library=library, description=description)
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(rendered)
+    render_template(
+        "python_model.py.jinja", output_path, library=library, description=description
+    )
 
     console.print(f"[green]Created {library} model at: {output_path}")

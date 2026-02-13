@@ -7,6 +7,7 @@ from dbt.config.renderer import ProfileRenderer
 def find_profile(
     override: str | None, root: str, render: ProfileRenderer
 ) -> str | None:
+    """Find the profile name from override or project config."""
     if override is not None:
         return override
 
@@ -18,6 +19,7 @@ def find_profile(
 def find_target(
     override: str | None, profile: dict[str, Any], render: ProfileRenderer
 ) -> str:
+    """Find the target name from override or profile config."""
     if override is not None:
         return override
     if "target" in profile:

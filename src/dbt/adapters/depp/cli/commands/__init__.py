@@ -6,4 +6,4 @@ from .inspect import inspect
 from .new_model import new_model
 from .validate import validate
 
-__all__ = ["init", "inspect", "new_model", "experiment", "validate"]
+__all__ = ["experiment", "init", "inspect", "new_model", "validate"]

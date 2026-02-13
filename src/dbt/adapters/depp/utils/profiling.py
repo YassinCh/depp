@@ -2,7 +2,6 @@
 
 import time
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass
@@ -29,5 +28,5 @@ class Timer:
         self.start = time.perf_counter()
         return self
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(self, *args: object) -> None:
         self.elapsed = time.perf_counter() - self.start

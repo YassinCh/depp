@@ -1,14 +1,13 @@
-from .adapter_type import AdapterTypeDescriptor
-from .connections import DeppCredentials
-from .credential_wrapper import DeppCredentialsWrapper
-from .model_config import ModelConfig
-from .profile_loader import DbInfo, RelationDescriptor
+from dbt.adapters.depp.config.adapter_type import ADAPTER_NAME
+from dbt.adapters.depp.config.connections import DeppCredentials
+from dbt.adapters.depp.config.credential_wrapper import DeppCredentialsWrapper
+from dbt.adapters.depp.config.model_config import ModelConfig
+from dbt.adapters.depp.config.profile_loader import DbInfo
 
 __all__ = [
-    "AdapterTypeDescriptor",
+    "ADAPTER_NAME",
+    "DbInfo",
     "DeppCredentials",
     "DeppCredentialsWrapper",
-    "RelationDescriptor",
-    "DbInfo",
     "ModelConfig",
 ]

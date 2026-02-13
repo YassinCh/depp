@@ -9,6 +9,7 @@ app = cyclopts.App(
 
 
 def main() -> None:
+    """Run the dbt-depp CLI application."""
     app()
 
 

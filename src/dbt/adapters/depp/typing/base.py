@@ -69,12 +69,10 @@ class DbtConfig:
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize configuration."""
-        ...
 
     @staticmethod
     def get(key: str, default: Any | None = None) -> Any:
         """Get configuration value by key."""
-        ...
 
     def __call__(self, **kwargs: Any) -> None:
         """Set configuration options.
@@ -85,4 +83,3 @@ class DbtConfig:
             constraints: List of constraint configurations (e.g., primary keys)
             **kwargs: Additional dbt configuration options (materialized, schema, etc.)
         """
-        ...

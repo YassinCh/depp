@@ -3,15 +3,13 @@
 import ast
 import contextlib
 import inspect
-from typing import Optional, Union
+from pathlib import Path
 
 
 def get_library_from_typehint(
     code: str, mapping: dict[str, str], func: str = "model"
 ) -> str | None:
     """Extract the library name from the model function's type annotation."""
-    # TODO: find out a way to both simplify this and think about this mapping
-    # TODO: Auto create this mapping?
     for node in ast.walk(ast.parse(code)):
         if (
             isinstance(node, ast.FunctionDef)
@@ -29,7 +27,7 @@ def get_library_from_typehint(
     return None
 
 
-def get_docstring(node: Union[ast.Module, ast.FunctionDef]) -> Optional[str]:
+def get_docstring(node: ast.Module | ast.FunctionDef) -> str | None:
     """Extract docstring from node if it exists."""
     if (
         node.body
@@ -41,15 +39,18 @@ def get_docstring(node: Union[ast.Module, ast.FunctionDef]) -> Optional[str]:
     return None
 
 
-def extract_python_docstring(file_path: str, func_name: str = "model") -> Optional[str]:
+def extract_python_docstring(file_path: str, func_name: str = "model") -> str | None:
     """Extract docstring from Python model file."""
-    with contextlib.suppress(Exception):
-        with open(file_path, "r", encoding="utf-8") as f:
+    with contextlib.suppress(OSError, SyntaxError):
+        with Path(file_path).open(encoding="utf-8") as f:
             tree = ast.parse(f.read())
 
         for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef) and node.name == func_name:
-                if doc := get_docstring(node):
-                    return doc
+            if (
+                isinstance(node, ast.FunctionDef)
+                and node.name == func_name
+                and (doc := get_docstring(node))
+            ):
+                return doc
         return get_docstring(tree)
     return None

@@ -1,0 +1,24 @@
+# Snowflake example profile for DEPP
+# Copy to ~/.dbt/profiles.yml or set DBT_PROFILES_DIR to use
+
+test_project:
+  target: dev_snowflake_depp
+  outputs:
+    # DEPP wrapper pointing to Snowflake
+    dev_snowflake_depp:
+      type: depp
+      db_profile: dev_snowflake
+      database: SNOWFLAKE_LEARNING_DB
+      schema: PUBLIC
+
+    # Actual Snowflake connection (username/password auth)
+    dev_snowflake:
+      type: snowflake
+      account: fm92810.eu-central-1.aws
+      user: YASSIMBA
+      password: Smokejumper1910@
+      role: ACCOUNTADMIN
+      warehouse: SNOWFLAKE_LEARNING_WH
+      database: SNOWFLAKE_LEARNING_DB
+      schema: PUBLIC
+      threads: 4
