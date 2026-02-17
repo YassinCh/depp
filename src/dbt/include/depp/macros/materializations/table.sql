@@ -6,9 +6,44 @@
 
   {%- set relation = this.incorporate(type='table') -%}
 
+  {# The Python executor uses DROP TABLE ... CASCADE which silently drops
+     dependent views without updating dbt's relation cache, causing
+     "relation does not exist" errors in downstream view materializations.
+     Collect dependent views before the executor runs so we can evict them
+     from the cache afterwards. #}
+  {%- set dependent_views = [] -%}
+  {%- if load_cached_relation(this) is not none -%}
+    {%- set deps_sql -%}
+      select dependent_ns.nspname as dep_schema,
+             dependent_view.relname as dep_name
+        from pg_depend
+        join pg_rewrite on pg_depend.objid = pg_rewrite.oid
+        join pg_class as dependent_view on pg_rewrite.ev_class = dependent_view.oid
+        join pg_class as source_table on pg_depend.refobjid = source_table.oid
+        join pg_namespace dependent_ns on dependent_view.relnamespace = dependent_ns.oid
+        join pg_namespace source_ns on source_table.relnamespace = source_ns.oid
+       where source_ns.nspname = '{{ relation.schema }}'
+         and source_table.relname = '{{ relation.identifier }}'
+         and dependent_view.oid != source_table.oid
+         and dependent_view.relkind = 'v'
+    {%- endset -%}
+    {%- for row in run_query(deps_sql) -%}
+      {%- do dependent_views.append(adapter.get_relation(
+        database=relation.database,
+        schema=row['dep_schema'],
+        identifier=row['dep_name']
+      )) -%}
+    {%- endfor -%}
+  {%- endif -%}
+
   {%- call statement('main', language=language) -%}
     {{- py_write(compiled_code, relation) }}
   {%- endcall %}
+
+  {# Evict CASCADE-dropped views from the relation cache #}
+  {%- for dep_rel in dependent_views if dep_rel is not none -%}
+    {%- do adapter.drop_relation(dep_rel) -%}
+  {%- endfor -%}
 
   {% do create_indexes(relation) %}
   {% do create_constraints(relation) %}
