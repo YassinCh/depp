@@ -34,12 +34,11 @@ class SnowflakeOps:
         """Get Snowflake connection as context manager."""
         conn = snowflake.connector.connect(
             account=creds.account,
-            user=creds.user,
-            password=creds.password,
-            warehouse=creds.warehouse,
             database=creds.database,
             schema=schema or creds.schema,
+            warehouse=creds.warehouse,
             role=creds.role,
+            **creds.auth_args(),
         )
         try:
             yield conn
