@@ -6,7 +6,7 @@ from dbt.adapters.contracts.connection import Credentials
 
 from dbt.adapters.depp.db import get_db_ops
 
-from .protocols import Converter, DbContext, Reader, SourceInfo, Writer
+from .protocols import Converter, DbContext, ReadOptions, Reader, SourceInfo, Writer
 from .result import ExecutionResult
 
 
@@ -60,11 +60,18 @@ class Executor:
         ctx = DbContext(db_ops, creds)
         return cls(cls.registry[key], ctx)
 
-    def read_df(self, table_name: str) -> Any:
+    def read_df(
+        self,
+        table_name: str,
+        *,
+        partition_on: str | None = None,
+        partition_num: int | None = None,
+    ) -> Any:
         """Read a table into a DataFrame via reader and converter."""
         source = SourceInfo.parse(table_name)
+        options = ReadOptions(partition_on, partition_num) if partition_on else None
         start = time.perf_counter()
-        arrow = self.reader.read_arrow(self.ctx, source)
+        arrow = self.reader.read_arrow(self.ctx, source, options)
         self.read_time += time.perf_counter() - start
         return self.converter.from_arrow(arrow)
 

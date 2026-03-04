@@ -42,10 +42,20 @@ class SourceInfo:
         )
 
 
+@dataclass(frozen=True)
+class ReadOptions:
+    """Options for partitioned parallel reads."""
+
+    partition_on: str | None = None
+    partition_num: int | None = None
+
+
 class Reader(Protocol):
     """Protocol for reading data from a database into Arrow format."""
 
-    def read_arrow(self, ctx: DbContext, source: SourceInfo) -> Any: ...
+    def read_arrow(
+        self, ctx: DbContext, source: SourceInfo, options: ReadOptions | None = None
+    ) -> Any: ...
 
 
 class Converter[T](Protocol):

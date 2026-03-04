@@ -7,6 +7,7 @@ from dbt.adapters.depp.db.snowflake import SnowflakeOps
 from dbt.adapters.depp.executors.protocols import (
     DbContext,
     GeoArrowResult,
+    ReadOptions,
     SourceInfo,
 )
 
@@ -16,7 +17,9 @@ class SnowflakeReader:
 
     __slots__ = ()
 
-    def read_arrow(self, ctx: DbContext, source: SourceInfo) -> Any:
+    def read_arrow(
+        self, ctx: DbContext, source: SourceInfo, options: ReadOptions | None = None
+    ) -> Any:
         ops = cast(SnowflakeOps, ctx.ops)
         creds = cast(SnowflakeCredentials, ctx.creds)
         query = ops.build_select_query(source.schema, source.table)
@@ -28,7 +31,9 @@ class SnowflakeGeoReader:
 
     __slots__ = ()
 
-    def read_arrow(self, ctx: DbContext, source: SourceInfo) -> GeoArrowResult:
+    def read_arrow(
+        self, ctx: DbContext, source: SourceInfo, options: ReadOptions | None = None
+    ) -> GeoArrowResult:
         ops = cast(SnowflakeOps, ctx.ops)
         creds = cast(SnowflakeCredentials, ctx.creds)
         query = ops.build_select_query(source.schema, source.table)

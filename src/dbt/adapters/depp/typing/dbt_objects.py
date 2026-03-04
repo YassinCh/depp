@@ -21,6 +21,8 @@ class DbtObject[DataFrameT_co: DataFrame](Protocol):
         *additional_names: str,
         version: str | int | None = None,
         v: str | int | None = None,
+        partition_on: str | None = None,
+        partition_num: int | None = None,
     ) -> DataFrameT_co:
         """Return the referenced model as a DataFrame.
 
@@ -29,18 +31,29 @@ class DbtObject[DataFrameT_co: DataFrame](Protocol):
             *additional_names: Additional parts of the model name (for two-part names)
             version: Model version (alternative to 'v')
             v: Model version (short form)
+            partition_on: Column name (numeric/date) to partition parallel reads on
+            partition_num: Number of parallel partitions (defaults to cpu count)
 
         Returns:
             A DataFrame containing the referenced model's data.
         """
         ...
 
-    def source(self, source_name: str, table_name: str) -> DataFrameT_co:
+    def source(
+        self,
+        source_name: str,
+        table_name: str,
+        *,
+        partition_on: str | None = None,
+        partition_num: int | None = None,
+    ) -> DataFrameT_co:
         """Return the source table as a DataFrame.
 
         Args:
             source_name: Name of the source
             table_name: Name of the table within the source
+            partition_on: Column name (numeric/date) to partition parallel reads on
+            partition_num: Number of parallel partitions (defaults to cpu count)
 
         Returns:
             A DataFrame containing the source table's data.

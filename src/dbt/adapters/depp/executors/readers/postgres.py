@@ -1,3 +1,4 @@
+import os
 from typing import Any, cast
 
 import connectorx as cx
@@ -8,8 +9,18 @@ from dbt.adapters.depp.db.postgres import PostgresOps
 from dbt.adapters.depp.executors.protocols import (
     DbContext,
     GeoArrowResult,
+    ReadOptions,
     SourceInfo,
 )
+
+
+def _cx_partition_kwargs(options: ReadOptions | None) -> dict[str, Any]:
+    if not options or not options.partition_on:
+        return {}
+    return {
+        "partition_on": options.partition_on,
+        "partition_num": options.partition_num or os.cpu_count() or 4,
+    }
 
 
 class PostgresReader:
@@ -17,10 +28,15 @@ class PostgresReader:
 
     __slots__ = ()
 
-    def read_arrow(self, ctx: DbContext, source: SourceInfo) -> Any:
+    def read_arrow(
+        self, ctx: DbContext, source: SourceInfo, options: ReadOptions | None = None
+    ) -> Any:
         query = ctx.ops.build_select_query(source.schema, source.table)
         conn = ctx.ops.connection_string(ctx.creds)
-        return cx.read_sql(conn, query, return_type="arrow", protocol="binary")
+        return cx.read_sql(
+            conn, query, return_type="arrow", protocol="binary",
+            **_cx_partition_kwargs(options),
+        )
 
 
 class PostgresGeoReader:
@@ -28,7 +44,9 @@ class PostgresGeoReader:
 
     __slots__ = ()
 
-    def read_arrow(self, ctx: DbContext, source: SourceInfo) -> GeoArrowResult:
+    def read_arrow(
+        self, ctx: DbContext, source: SourceInfo, options: ReadOptions | None = None
+    ) -> GeoArrowResult:
         ops = cast(PostgresOps, ctx.ops)
         creds = cast(PostgresCredentials, ctx.creds)
         with ops.get_connection(creds) as conn:
@@ -42,7 +60,10 @@ class PostgresGeoReader:
         parts = regular + [f"ST_AsBinary({c}) as {c}_wkb" for c in geom_names]
         query = f'SELECT {", ".join(parts)} FROM "{source.schema}"."{source.table}"'
         conn_str = ctx.ops.connection_string(ctx.creds)
-        arrow = cx.read_sql(conn_str, query, return_type="arrow", protocol="binary")
+        arrow = cx.read_sql(
+            conn_str, query, return_type="arrow", protocol="binary",
+            **_cx_partition_kwargs(options),
+        )
         return GeoArrowResult(
             table=arrow, geometry_columns=geom_names, srid=srid, format="wkb"
         )
