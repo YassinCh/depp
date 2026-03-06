@@ -12,7 +12,7 @@
      Collect dependent views before the executor runs so we can evict them
      from the cache afterwards. #}
   {%- set dependent_views = [] -%}
-  {%- if load_cached_relation(this) is not none -%}
+  {%- if adapter.type() == 'postgres' and load_cached_relation(this) is not none -%}
     {%- set deps_sql -%}
       select dependent_ns.nspname as dep_schema,
              dependent_view.relname as dep_name
@@ -45,9 +45,11 @@
     {%- do adapter.drop_relation(dep_rel) -%}
   {%- endfor -%}
 
+  {% if adapter.type() == 'postgres' %}
   {% do create_indexes(relation) %}
   {% do create_constraints(relation) %}
   {% do run_query("COMMIT;") %}
+  {% endif %}
 
 {{- return({'relations': [relation]}) }}
 
