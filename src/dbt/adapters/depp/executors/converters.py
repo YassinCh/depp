@@ -4,6 +4,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import polars as pl
+import pyarrow as pa
 import shapely
 
 from dbt.adapters.depp.db import DatabaseOps
@@ -65,13 +66,17 @@ class PolarsConverter:
             )
         return df, array_cols
 
+    def to_arrow(self, df: pl.DataFrame) -> pa.Table:
+        """Convert a Polars DataFrame to Arrow (near zero-copy)."""
+        return df.to_arrow()
+
     def to_polars(self, df: pl.DataFrame) -> pl.DataFrame:
         """Return the DataFrame as-is (already Polars)."""
         return df
 
     def to_pandas(self, df: pl.DataFrame) -> pd.DataFrame:
         """Convert a Polars DataFrame to Pandas."""
-        return df.to_pandas()
+        return df.to_pandas(use_pyarrow_extension_array=True)
 
 
 class PandasConverter:
@@ -88,6 +93,10 @@ class PandasConverter:
     ) -> tuple[pd.DataFrame, dict[str, bool]]:
         """Detect and format list columns for database insertion."""
         return detect_pandas_array_columns(df, db_ops)
+
+    def to_arrow(self, df: pd.DataFrame) -> pa.Table:
+        """Convert a Pandas DataFrame to Arrow."""
+        return pa.Table.from_pandas(df)
 
     def to_polars(self, df: pd.DataFrame) -> pl.DataFrame:
         """Convert a Pandas DataFrame to Polars."""
@@ -126,6 +135,10 @@ class GeoPandasConverter:
     ) -> tuple[Any, dict[str, bool]]:
         """Detect and format list columns for database insertion."""
         return detect_pandas_array_columns(df, db_ops)
+
+    def to_arrow(self, df: Any) -> pa.Table:
+        """Convert a GeoDataFrame to Arrow via Pandas."""
+        return pa.Table.from_pandas(pd.DataFrame(df))
 
     def to_polars(self, df: Any) -> pl.DataFrame:
         """Convert a GeoDataFrame to Polars via Pandas."""

@@ -36,7 +36,7 @@ def cast_geography_columns(
 
 
 class SnowflakeWriter:
-    """Write DataFrames to Snowflake via write_pandas."""
+    """Write DataFrames to Snowflake via Parquet PUT + COPY."""
 
     __slots__ = ("converter",)
 
@@ -49,8 +49,8 @@ class SnowflakeWriter:
         ops = cast(SnowflakeOps, ctx.ops)
         creds = cast(SnowflakeCredentials, ctx.creds)
         df = self.converter.prepare_array_columns(df, ctx.ops)[0]
-        pdf = self.converter.to_pandas(df)
-        rows = ops.write_from_pandas(creds, pdf, source.table, source.schema)
+        arrow = self.converter.to_arrow(df)
+        rows = ops.write_from_arrow(creds, arrow, source.table, source.schema)
         return ExecutionResult(
             rows_affected=rows, schema=source.schema, table=source.table
         )
@@ -75,8 +75,8 @@ class SnowflakeGeoWriter:
                 lambda g: ops.geometry_to_db(g) if g else None
             )
         df = self.converter.prepare_array_columns(df, ctx.ops)[0]
-        pdf = self.converter.to_pandas(df)
-        rows = ops.write_from_pandas(creds, pdf, source.table, source.schema)
+        arrow = self.converter.to_arrow(df)
+        rows = ops.write_from_arrow(creds, arrow, source.table, source.schema)
         if geom_cols:
             cast_geography_columns(
                 ops,

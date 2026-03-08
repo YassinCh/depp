@@ -1,13 +1,14 @@
 import json
+import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any
 
-import pandas as pd
 import pyarrow as pa
+import pyarrow.parquet as pq
 import snowflake.connector
 from dbt.adapters.snowflake.connections import SnowflakeCredentials
-from snowflake.connector.pandas_tools import write_pandas
 
 from .base import DEFAULT_SRID
 
@@ -99,21 +100,35 @@ class SnowflakeOps:
         """Convert geometry to GeoJSON string for Snowflake."""
         return json.dumps(geom.__geo_interface__)
 
-    def write_from_pandas(
-        self, creds: SnowflakeCredentials, df: pd.DataFrame, table: str, schema: str
+    def write_from_arrow(
+        self, creds: SnowflakeCredentials, arrow: pa.Table, table: str, schema: str
     ) -> int:
-        """Uppercase columns and write DataFrame via write_pandas."""
-        df.columns = df.columns.str.upper()
-        with self.get_connection(creds, schema) as conn:
-            write_pandas(
-                conn,
-                df,
-                table_name=self.format_identifier(table),
-                schema=self.format_identifier(schema),
-                auto_create_table=True,
-                overwrite=True,
-            )
-        return len(df)
+        """Write Arrow table via Parquet PUT + COPY INTO."""
+        arrow = arrow.rename_columns([c.upper() for c in arrow.column_names])
+        s = self.format_identifier(schema)
+        t = self.format_identifier(table)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "data.parquet"
+            pq.write_table(arrow, path, use_dictionary=False)
+            with self.get_connection(creds, schema) as conn:
+                cur = conn.cursor()
+                stage = f"{s}.depp_tmp_stage"
+                cur.execute(
+                    f"CREATE OR REPLACE TEMPORARY STAGE {stage}"
+                    " FILE_FORMAT=(TYPE=PARQUET)"
+                )
+                cur.execute(f"PUT 'file://{path}' @{stage} AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
+                cur.execute(
+                    f"CREATE OR REPLACE TABLE {s}.{t}"
+                    f" USING TEMPLATE (SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))"
+                    f" FROM TABLE(INFER_SCHEMA(LOCATION => '@{stage}',"
+                    " FILE_FORMAT => '(TYPE=PARQUET)')))"
+                )
+                cur.execute(
+                    f"COPY INTO {s}.{t} FROM @{stage}"
+                    " MATCH_BY_COLUMN_NAME=CASE_INSENSITIVE PURGE=TRUE"
+                )
+        return arrow.num_rows
 
     def read_arrow(self, creds: SnowflakeCredentials, schema: str, query: str) -> Any:
         """Execute query and return Arrow table."""
